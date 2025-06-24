@@ -5,7 +5,7 @@ source <(curl -fsSL https://raw.githubusercontent.com/zackwithak13/ProxmoxVE/ref
 # License: MIT | https://github.com/community-scripts/ProxmoxVE/raw/main/LICENSE
 # Source: https://www.uhfapp.com/server
 
-APP="UHF Server"
+APP="UHF"
 var_tags="${var_tags:-media}"
 var_cpu="${var_cpu:-2}"
 var_ram="${var_ram:-2048}"
