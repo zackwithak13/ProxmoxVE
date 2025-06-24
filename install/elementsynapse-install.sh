@@ -20,7 +20,7 @@ $STD apt-get install -y \
   debconf-utils
 msg_ok "Installed Dependencies"
 
-NODE_VERSION="22" NODE_MODULE="yarn@latest" install_node_and_modules
+NODE_VERSION="22" NODE_MODULE="yarn@latest" setup_nodejs
 
 read -p "${TAB3}Please enter the name for your server: " servername
 
@@ -54,7 +54,12 @@ RELEASE=$(curl -fsSL https://api.github.com/repos/etkecc/synapse-admin/releases/
 curl -fsSL "https://github.com/etkecc/synapse-admin/archive/refs/tags/v${RELEASE}.tar.gz" -o "$temp_file"
 tar xzf "$temp_file" -C /opt/synapse-admin --strip-components=1
 cd /opt/synapse-admin
+$STD yarn global add serve
 $STD yarn install --ignore-engines
+$STD yarn build
+mv ./dist ../ &&
+  rm -rf * &&
+  mv ../dist ./
 msg_ok "Installed Element Synapse"
 
 msg_info "Creating Service"
@@ -67,7 +72,7 @@ Requires=matrix-synapse.service
 [Service]
 Type=simple
 WorkingDirectory=/opt/synapse-admin
-ExecStart=/usr/bin/yarn start --host
+ExecStart=/usr/local/bin/serve -s dist -l 5173
 Restart=always
 
 [Install]
