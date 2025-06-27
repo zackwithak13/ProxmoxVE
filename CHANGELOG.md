@@ -14,7 +14,68 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 All LXC instances created using this repository come pre-installed with Midnight Commander, which is a command-line tool (`mc`) that offers a user-friendly file and directory management interface for the terminal environment.
 
 
+## 2025-06-27
+
+### 🚀 Updated Scripts
+
+  - #### 🐞 Bug Fixes
+
+    - wizarr: remove unneeded tmp file [@MickLesk](https://github.com/MickLesk) ([#5517](https://github.com/community-scripts/ProxmoxVE/pull/5517))
+
+### 🧰 Maintenance
+
+  - #### 📂 Github
+
+    - New workflow to push to gitea and change links to gitea [@michelroegl-brunner](https://github.com/michelroegl-brunner) ([#5510](https://github.com/community-scripts/ProxmoxVE/pull/5510))
+
+### 🌐 Website
+
+  - #### 📝 Script Information
+
+    - Wireguard, Update Link to Documentation. [@michelroegl-brunner](https://github.com/michelroegl-brunner) ([#5514](https://github.com/community-scripts/ProxmoxVE/pull/5514))
+
+## 2025-06-26
+
+### 🆕 New Scripts
+
+  - ConvertX ([#5484](https://github.com/community-scripts/ProxmoxVE/pull/5484))
+
+### 🚀 Updated Scripts
+
+  - [tools] Update setup_nodejs function [@tremor021](https://github.com/tremor021) ([#5488](https://github.com/community-scripts/ProxmoxVE/pull/5488))
+- [tools] Fix setup_mongodb function [@tremor021](https://github.com/tremor021) ([#5486](https://github.com/community-scripts/ProxmoxVE/pull/5486))
+
 ## 2025-06-25
+
+### 🚀 Updated Scripts
+
+  - #### 🐞 Bug Fixes
+
+    - Docmost: Increase resources [@tremor021](https://github.com/tremor021) ([#5458](https://github.com/community-scripts/ProxmoxVE/pull/5458))
+
+  - #### ✨ New Features
+
+    - tools.func: new helper for imagemagick [@MickLesk](https://github.com/MickLesk) ([#5452](https://github.com/community-scripts/ProxmoxVE/pull/5452))
+    - YunoHost: add Update-Function [@MickLesk](https://github.com/MickLesk) ([#5450](https://github.com/community-scripts/ProxmoxVE/pull/5450))
+
+  - #### 🔧 Refactor
+
+    - Refactor: Tailscale  [@MickLesk](https://github.com/MickLesk) ([#5454](https://github.com/community-scripts/ProxmoxVE/pull/5454))
+
+### 🌐 Website
+
+  - #### 🐞 Bug Fixes
+
+    - Update Tooltips component to conditionally display updateable status based on item type [@BramSuurdje](https://github.com/BramSuurdje) ([#5461](https://github.com/community-scripts/ProxmoxVE/pull/5461))
+    - Refactor CommandMenu to prevent duplicate scripts across categories [@BramSuurdje](https://github.com/BramSuurdje) ([#5463](https://github.com/community-scripts/ProxmoxVE/pull/5463))
+
+  - #### ✨ New Features
+
+    - Enhance InstallCommand component to support Gitea as an alternative source for installation scripts. [@BramSuurdje](https://github.com/BramSuurdje) ([#5464](https://github.com/community-scripts/ProxmoxVE/pull/5464))
+
+  - #### 📝 Script Information
+
+    - Website: mark VM's and "OS"-LXC's as updatable [@MickLesk](https://github.com/MickLesk) ([#5453](https://github.com/community-scripts/ProxmoxVE/pull/5453))
 
 ## 2025-06-24
 
