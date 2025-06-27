@@ -37,7 +37,7 @@ echo "API_HOST=0.0.0.0
 API_PORT=7568
 RECORDINGS_DIR=/var/lib/uhf-server/recordings
 DB_PATH=/var/lib/uhf-server/data/db.json
-LOG_LEVEL=INFO" >$env_path
+LOG_LEVEL=INFO" >"${env_path}"
 $STD curl -fsSL https://link.uhfapp.com/setup.sh | bash
 msg_ok "Installed UHF Server"
 
@@ -54,7 +54,7 @@ WorkingDirectory=/opt/uhf-server
 EnvironmentFile=/var/lib/uhf-server/config/.env
 ExecStart=/opt/uhf-server/uhf-server
 [Install]
-WantedBy=multi-user.target" >$service_path
+WantedBy=multi-user.target" >"${service_path}"
 systemctl enable --now -q uhf-server.service
 msg_ok "Created Service"
 
