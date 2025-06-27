@@ -38,7 +38,7 @@ API_PORT=7568
 RECORDINGS_DIR=/var/lib/uhf-server/recordings
 DB_PATH=/var/lib/uhf-server/data/db.json
 LOG_LEVEL=INFO" >"${env_path}"
-$STD curl -fsSL https://link.uhfapp.com/setup.sh | bash
+$STD bash -c "$(curl -fsSL https://link.uhfapp.com/setup.sh)"
 msg_ok "Installed UHF Server"
 
 msg_info "Creating Service"
