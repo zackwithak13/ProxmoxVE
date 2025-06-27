@@ -25,7 +25,7 @@ fi
 msg_ok "Set Up Hardware Acceleration"
 
 msg_info "Installing Dependencies"
-$STD apt-get -y install {curl ffmpeg unzip ca-certificates}
+$STD apt-get -y install {curl,ffmpeg,unzip,ca-certificates}
 msg_ok "Installed Dependencies"
 
 msg_info "Installing UHF Server"
