@@ -32,7 +32,7 @@ function update_script() {
   msg_ok "Stopped ${APP}"
 
   msg_info "Updating ${APP}"
-  $STD curl -sL https://link.uhfapp.com/setup.sh | bash
+  curl -fsSL https://link.uhfapp.com/setup.sh | bash
   msg_ok "Updated ${APP}"
 
   msg_info "Starting ${APP}"
