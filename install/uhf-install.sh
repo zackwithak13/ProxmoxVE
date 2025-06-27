@@ -25,7 +25,7 @@ fi
 msg_ok "Set Up Hardware Acceleration"
 
 msg_info "Installing Dependencies"
-$STD add-apt-repository ppa:ubuntuhandbook1/ffmpeg7 -y
+$STD add-apt-repository -y ppa:ubuntuhandbook1/ffmpeg7
 $STD apt-get update
 $STD apt-get -y install {curl,ffmpeg,unzip,ca-certificates}
 msg_ok "Installed Dependencies"
