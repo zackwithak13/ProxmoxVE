@@ -370,7 +370,6 @@ EOF
   REPO_FILE=""
   REPO_ACTIVE=0
   REPO_COMMENTED=0
-  # Suche nach existierendem Block (aktiv oder auskommentiert)
   for file in /etc/apt/sources.list.d/*.sources; do
     if grep -q "Components:.*pve-no-subscription" "$file"; then
       REPO_FILE="$file"
