@@ -254,7 +254,8 @@ TEMPLATE_SEARCH="${PCT_OSTYPE}-${PCT_OSVERSION:-}"
 # 1. Check local templates first
 msg_info "Searching for template '$TEMPLATE_SEARCH'"
 mapfile -t TEMPLATES < <(
-  pveam list "$TEMPLATE_STORAGE" | awk -v s="$TEMPLATE_SEARCH" '$1 ~ s {print $1}' |
+  pveam list "$TEMPLATE_STORAGE" |
+    awk -v s="$TEMPLATE_SEARCH" '$1 ~ s && $1 ~ /-standard_/ {print $1}' |
     sed 's/.*\///' | sort -t - -k 2 -V
 )
 
@@ -264,8 +265,10 @@ else
   msg_info "No local template found, checking online repository"
   pveam update >/dev/null 2>&1
   mapfile -t TEMPLATES < <(
-    pveam available -section system | sed -n "s/.*\($TEMPLATE_SEARCH.*\)/\1/p" |
-      sort -t - -k 2 -V
+    pveam update >/dev/null 2>&1 &&
+      pveam available -section system |
+      sed -n "s/.*\($TEMPLATE_SEARCH.*-standard_.*\)/\1/p" |
+        sort -t - -k 2 -V
   )
   TEMPLATE_SOURCE="online"
 fi
