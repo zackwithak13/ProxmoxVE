@@ -51,7 +51,6 @@ $STD apt-get install -y \
   zlib1g \
   tesseract-ocr \
   tesseract-ocr-eng
-$STD sudo make install
 msg_ok "Installed OCR Dependencies"
 
 msg_info "Setup JBIG2"
