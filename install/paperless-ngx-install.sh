@@ -54,12 +54,12 @@ $STD apt-get install -y \
 msg_ok "Installed OCR Dependencies"
 
 msg_info "Setup JBIG2"
-pushd /opt/jbig2enc >/dev/null
+cd /opt/jbig2enc
 $STD bash ./autogen.sh
 $STD bash ./configure
 $STD make
 $STD make install
-popd >/dev/null
+cd /
 rm -rf /opt/jbig2enc
 msg_ok "Installed JBIG2"
 
