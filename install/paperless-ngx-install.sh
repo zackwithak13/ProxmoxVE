@@ -54,13 +54,13 @@ $STD apt-get install -y \
 msg_ok "Installed OCR Dependencies"
 
 msg_info "Setup JBIG2"
-cd /opt/jbig2enc
+pushd /opt/jbig2enc >/dev/null
 $STD bash ./autogen.sh
 $STD bash ./configure
 $STD make
 $STD make install
+popd >/dev/null
 rm -rf /opt/jbig2enc
-cd /
 msg_ok "Installed JBIG2"
 
 msg_info "Setting up PostgreSQL database"
@@ -73,14 +73,23 @@ $STD sudo -u postgres psql -c "CREATE DATABASE $DB_NAME WITH OWNER $DB_USER ENCO
 $STD sudo -u postgres psql -c "ALTER ROLE $DB_USER SET client_encoding TO 'utf8';"
 $STD sudo -u postgres psql -c "ALTER ROLE $DB_USER SET default_transaction_isolation TO 'read committed';"
 $STD sudo -u postgres psql -c "ALTER ROLE $DB_USER SET timezone TO 'UTC'"
-echo "" >>~/paperless.creds
-echo -e "Paperless-ngx Database User: \e[32m$DB_USER\e[0m" >>~/paperless.creds
-echo -e "Paperless-ngx Database Password: \e[32m$DB_PASS\e[0m" >>~/paperless.creds
-echo -e "Paperless-ngx Database Name: \e[32m$DB_NAME\e[0m" >>~/paperless.creds
+{
+  echo "Paperless-ngx-Credentials"
+  echo "Paperless-ngx Database Name: $DB_NAME"
+  echo "Paperless-ngx Database User: $DB_USER"
+  echo "Paperless-ngx Database Password: $DB_PASS"
+  echo "Paperless-ngx Secret Key: $SECRET_KEY\n"
+  echo "Paperless-ngx WebUI User: admin"
+  echo "Paperless-ngx WebUI Password: $DB_PASS"
+} >>~/paperless-ngx.creds
+msg_ok "Setup PostgreSQL database"
 
 msg_info "Installing Natural Language Toolkit (Patience)"
 $STD uv pip install --python 3.13 nltk
-$STD uv run --python 3.13 --with nltk -- python -m nltk.downloader -d /usr/share/nltk_data all
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data snowball_data
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data stopwords
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data punkt_tab || \
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data punkt
 sed -i -e 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
 msg_ok "Installed Natural Language Toolkit"
 
