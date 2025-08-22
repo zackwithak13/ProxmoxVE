@@ -84,15 +84,6 @@ $STD sudo -u postgres psql -c "ALTER ROLE $DB_USER SET timezone TO 'UTC'"
 } >>~/paperless-ngx.creds
 msg_ok "Setup PostgreSQL database"
 
-msg_info "Installing Natural Language Toolkit (Patience)"
-$STD uv pip install --python 3.13 nltk
-$STD uv run python -m nltk.downloader -d /usr/share/nltk_data snowball_data
-$STD uv run python -m nltk.downloader -d /usr/share/nltk_data stopwords
-$STD uv run python -m nltk.downloader -d /usr/share/nltk_data punkt_tab || \
-$STD uv run python -m nltk.downloader -d /usr/share/nltk_data punkt
-sed -i -e 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
-msg_ok "Installed Natural Language Toolkit"
-
 msg_info "Setup Paperless-ngx"
 cd /opt/paperless
 $STD uv sync --all-extras
@@ -115,6 +106,15 @@ cd /opt/paperless/src
 $STD uv run -- python manage.py migrate
 msg_ok "Setup Paperless-ngx"
 
+msg_info "Installing Natural Language Toolkit (Patience)"
+cd /opt/paperless
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data snowball_data
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data stopwords
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data punkt_tab || \
+$STD uv run python -m nltk.downloader -d /usr/share/nltk_data punkt
+sed -i -e 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+msg_ok "Installed Natural Language Toolkit"
+
 msg_info "Setting up admin Paperless-ngx User & Password"
 cat <<EOF | uv run -- python /opt/paperless/src/manage.py shell
 from django.contrib.auth import get_user_model
@@ -124,15 +124,6 @@ user.is_superuser = True
 user.is_staff = True
 user.save()
 EOF
-{
-  echo "Paperless-ngx-Credentials"
-  echo "Paperless-ngx Database Name: $DB_NAME"
-  echo "Paperless-ngx Database User: $DB_USER"
-  echo "Paperless-ngx Database Password: $DB_PASS"
-  echo "Paperless-ngx Secret Key: $SECRET_KEY\n"
-  echo "Paperless-ngx WebUI User: admin"
-  echo "Paperless-ngx WebUI Password: $DB_PASS"
-} >>~/paperless-ngx.creds
 msg_ok "Set up admin Paperless-ngx User & Password"
 
 msg_info "Creating Services"
