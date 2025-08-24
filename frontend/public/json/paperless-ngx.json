@@ -33,7 +33,7 @@
     },
     "notes": [
         {
-            "text": "Show Login Credentials, type `cat ~/paperless.creds` in the LXC console",
+            "text": "Show Login Credentials, type `cat ~/paperless-ngx.creds` in the LXC console",
             "type": "info"
         },
         {
