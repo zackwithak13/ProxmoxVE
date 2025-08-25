@@ -210,7 +210,7 @@ if ! check_storage_support "vztmpl"; then
   exit 1
 fi
 
-msg_info "Checking template storage"
+#msg_info "Checking template storage"
 while true; do
   if select_storage template; then
     TEMPLATE_STORAGE="$STORAGE_RESULT"
@@ -251,15 +251,15 @@ fi
 # Update LXC template list
 TEMPLATE_SEARCH="${PCT_OSTYPE}-${PCT_OSVERSION:-}"
 case "$PCT_OSTYPE" in
-  debian|ubuntu)
-    TEMPLATE_PATTERN="-standard_"
-    ;;
-  alpine|fedora|rocky|centos)
-    TEMPLATE_PATTERN="-default_"
-    ;;
-  *)
-    TEMPLATE_PATTERN=""
-    ;;
+debian | ubuntu)
+  TEMPLATE_PATTERN="-standard_"
+  ;;
+alpine | fedora | rocky | centos)
+  TEMPLATE_PATTERN="-default_"
+  ;;
+*)
+  TEMPLATE_PATTERN=""
+  ;;
 esac
 
 # 1. Check local templates first
@@ -279,7 +279,7 @@ else
     pveam update >/dev/null 2>&1 &&
       pveam available -section system |
       sed -n "s/.*\($TEMPLATE_SEARCH.*$TEMPLATE_PATTERN.*\)/\1/p" |
-      sort -t - -k 2 -V
+        sort -t - -k 2 -V
   )
   TEMPLATE_SOURCE="online"
 fi
