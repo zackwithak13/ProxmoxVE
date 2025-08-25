@@ -12,6 +12,11 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
 ## 2025-08-25
 
+### 🆕 New Scripts
+
+  - Alpine-Redlib ([#7178](https://github.com/community-scripts/ProxmoxVE/pull/7178))
+- healthchecks ([#7177](https://github.com/community-scripts/ProxmoxVE/pull/7177))
+
 ### 🚀 Updated Scripts
 
   - #### 🐞 Bug Fixes
@@ -21,6 +26,8 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
   - #### ✨ New Features
 
+    - [core]: uv uses now "update-shell" command [@MickLesk](https://github.com/MickLesk) ([#7172](https://github.com/community-scripts/ProxmoxVE/pull/7172))
+    - [core]: tools.func - better verbose for postgresql [@MickLesk](https://github.com/MickLesk) ([#7173](https://github.com/community-scripts/ProxmoxVE/pull/7173))
     - n8n: Force update to NodeJS v22 [@tremor021](https://github.com/tremor021) ([#7176](https://github.com/community-scripts/ProxmoxVE/pull/7176))
 
 ## 2025-08-24
