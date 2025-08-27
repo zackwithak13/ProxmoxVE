@@ -27,8 +27,9 @@ function update_script() {
     exit
   fi
   if [[ -x /opt/homebox ]]; then
-    sed -i 's|/opt\b|/opt/homebox|g' /etc/systemd/system/homebox.service
-    sed -i 's|^ExecStart=/opt/homebox$|ExecStart=/opt/homebox/homebox|' /etc/systemd/system/homebox.service
+    sed -i 's|WorkingDirectory=/opt$|WorkingDirectory=/opt/homebox|' /etc/systemd/system/homebox.service
+    sed -i 's|ExecStart=/opt/homebox$|ExecStart=/opt/homebox/homebox|' /etc/systemd/system/homebox.service
+    sed -i 's|EnvironmentFile=/opt/.env$|EnvironmentFile=/opt/homebox/.env|' /etc/systemd/system/homebox.service
     systemctl daemon-reload
   fi
 
