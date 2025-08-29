@@ -2007,7 +2007,7 @@ check_for_gh_release() {
     if [[ -z "$current" ]]; then
       msg_info "${app} pinned to v${pinned_version}, no local version → install required"
       CHECK_UPDATE_RELEASE="$pinned_version"
-      : >"$current_file"
+      touch "$current_file"
       return 0
     fi
 
