@@ -1964,75 +1964,91 @@ check_for_gh_release() {
     }
   fi
 
-  # Fetch all releases (newest → oldest)
-  local releases
-  releases=$(curl -fsSL "https://api.github.com/repos/${source}/releases" |
-    jq -r '.[].tag_name' | sed 's/^v//')
+  # Fetch releases (newest → oldest)
+  local releases=""
+  releases=$(
+    curl -fsSL --max-time 15 \
+      -H 'Accept: application/vnd.github+json' \
+      -H 'X-GitHub-Api-Version: 2022-11-28' \
+      "https://api.github.com/repos/${source}/releases" |
+      jq -r '.[].tag_name' | sed 's/^v//'
+  ) || true
 
   if [[ -z "$releases" ]]; then
     msg_error "Unable to fetch releases for ${app}"
     return 1
   fi
 
+  # Define current and latest versions
   local latest current
   latest=$(echo "$releases" | head -n1)
-  [[ -f "$current_file" ]] && current=$(<"$current_file")
+  current=""
+  if [[ -f "$current_file" ]]; then
+    current="$(<"$current_file")"
+  fi
 
-  # helper: get index (lower index = newer)
+  # Helper: get index of a version (lower = newer)
   get_index() {
-    local ver="$1"
-    echo "$releases" | nl -ba | grep -w "$ver" | awk '{print $1}'
+    local ver="${1:-}"
+    [[ -z "$ver" ]] && return 1
+    local idx
+    idx=$(nl -ba <<<"$releases" | awk -v v="$ver" '$2==v{print $1; exit}')
+    [[ -n "$idx" ]] || return 1
+    echo "$idx"
   }
 
-  # --- Pinning enabled ---
+  # Pinning enabled
   if [[ -n "$pinned_version" ]]; then
-    # Ensure pin exists upstream
-    if ! echo "$releases" | grep -qx "$pinned_version"; then
-      msg_error "Pinned version v${pinned_version} not found in upstream releases!"
+    if ! grep -qxF "$pinned_version" <<<"$releases"; then
+      msg_error "Pinned version v${pinned_version} not found upstream"
       return 1
     fi
-
-    local pinned_index current_index
-    pinned_index=$(get_index "$pinned_version")
-    current_index=$(get_index "$current")
 
     if [[ -z "$current" ]]; then
       msg_info "${app} pinned to v${pinned_version}, no local version → install required"
       CHECK_UPDATE_RELEASE="$pinned_version"
+      : >"$current_file"
       return 0
     fi
 
     if [[ "$current" == "$pinned_version" ]]; then
       if [[ "$pinned_version" == "$latest" ]]; then
-        msg_ok "${app} pinned to v${pinned_version} (no update needed)"
+        msg_ok "${app} pinned to v${pinned_version} (up to date)"
       else
         msg_ok "${app} pinned to v${pinned_version} (already installed, upstream v${latest})"
       fi
       return 1
     fi
 
-    # Local older than pinned → update
+    local pinned_index current_index
+    pinned_index="$(get_index "$pinned_version" || true)"
+    current_index="$(get_index "$current" || true)"
+
     if [[ -z "$current_index" ]] || [[ "$current_index" -gt "$pinned_index" ]]; then
       msg_info "${app} pinned to v${pinned_version} (installed v${current:-none}) → update required"
       CHECK_UPDATE_RELEASE="$pinned_version"
+      : >"$current_file"
       return 0
     fi
 
-    # Local newer than pinned → downgrade
     if [[ "$current_index" -lt "$pinned_index" ]]; then
       msg_info "${app} pinned to v${pinned_version} (installed newer v${current}) → downgrade required"
       CHECK_UPDATE_RELEASE="$pinned_version"
+      : >"$current_file"
       return 0
     fi
-  fi
 
-  # --- No pin → compare against latest ---
-  if [[ "$current" != "$latest" ]] || [[ -z "$current" ]]; then
-    CHECK_UPDATE_RELEASE="$latest"
-    msg_info "New release available: v${latest} (current: v${current:-none})"
-    return 0
-  else
-    msg_ok "${app} is up to date (v${latest})"
     return 1
   fi
+
+  # No pinning → compare against latest
+  if [[ -z "$current" || "$current" != "$latest" ]]; then
+    CHECK_UPDATE_RELEASE="$latest"
+    msg_info "New release available: v${latest} (current: v${current:-none})"
+    : >"$current_file"
+    return 0
+  fi
+
+  msg_ok "${app} is up to date (v${latest})"
+  return 1
 }
