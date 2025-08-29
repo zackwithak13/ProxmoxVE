@@ -33,7 +33,7 @@ function update_script() {
     systemctl daemon-reload
   fi
 
-  if check_for_gh_release "sysadminsmedia" "homebox"; then
+  if check_for_gh_release "homebox" "sysadminsmedia/homebox"; then
     msg_info "Stopping ${APP}"
     systemctl stop homebox
     msg_ok "${APP} Stopped"
