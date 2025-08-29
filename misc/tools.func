@@ -1944,12 +1944,12 @@ function setup_ffmpeg() {
 check_for_gh_release() {
   local app="$1"
   local source="$2"
-  local pinned_version="${3:-}"   # optional
+  local pinned_version="${3:-}" # optional
   local current_file="$HOME/.${app,,}"
 
-  msg_info "Check for update: ${app}"
+  msg_info "Checking for update: ${app}"
 
-  # DNS check for GitHub
+  # DNS check
   if ! getent hosts api.github.com >/dev/null 2>&1; then
     msg_error "Network error: cannot resolve api.github.com"
     return 1
@@ -1957,48 +1957,82 @@ check_for_gh_release() {
 
   # jq check
   if ! command -v jq &>/dev/null; then
-    $STD apt-get update -qq 
+    $STD apt-get update -qq
     $STD apt-get install -y jq || {
       msg_error "Failed to install jq"
       return 1
     }
   fi
 
-  # get latest release
-local release
-  release=$(curl -fsSL "https://api.github.com/repos/${source}/releases/latest" |
-    jq -r '.tag_name' | sed 's/^v//')
+  # Fetch all releases (newest → oldest)
+  local releases
+  releases=$(curl -fsSL "https://api.github.com/repos/${source}/releases" |
+    jq -r '.[].tag_name' | sed 's/^v//')
 
-  if [[ -z "$release" ]]; then
-    msg_error "Unable to determine latest release for ${app}"
+  if [[ -z "$releases" ]]; then
+    msg_error "Unable to fetch releases for ${app}"
     return 1
   fi
 
-  local current=""
+  local latest current
+  latest=$(echo "$releases" | head -n1)
   [[ -f "$current_file" ]] && current=$(<"$current_file")
 
-  # PINNED Releases
+  # helper: get index (lower index = newer)
+  get_index() {
+    local ver="$1"
+    echo "$releases" | nl -ba | grep -w "$ver" | awk '{print $1}'
+  }
+
+  # --- Pinning enabled ---
   if [[ -n "$pinned_version" ]]; then
-    if [[ "$pinned_version" == "$release" ]]; then
-      msg_ok "${app} pinned to v${pinned_version} (no update needed)"
+    # Ensure pin exists upstream
+    if ! echo "$releases" | grep -qx "$pinned_version"; then
+      msg_error "Pinned version v${pinned_version} not found in upstream releases!"
       return 1
-    else
-      if [[ "$current" == "$pinned_version" ]]; then
-        msg_ok "${app} pinned to v${pinned_version} (already installed, upstream v${release})"
-        return 1
+    fi
+
+    local pinned_index current_index
+    pinned_index=$(get_index "$pinned_version")
+    current_index=$(get_index "$current")
+
+    if [[ -z "$current" ]]; then
+      msg_info "${app} pinned to v${pinned_version}, no local version → install required"
+      CHECK_UPDATE_RELEASE="$pinned_version"
+      return 0
+    fi
+
+    if [[ "$current" == "$pinned_version" ]]; then
+      if [[ "$pinned_version" == "$latest" ]]; then
+        msg_ok "${app} pinned to v${pinned_version} (no update needed)"
+      else
+        msg_ok "${app} pinned to v${pinned_version} (already installed, upstream v${latest})"
       fi
-      msg_info "${app} pinned to v${pinned_version} (upstream v${release}) → update/downgrade required"
+      return 1
+    fi
+
+    # Local older than pinned → update
+    if [[ -z "$current_index" ]] || [[ "$current_index" -gt "$pinned_index" ]]; then
+      msg_info "${app} pinned to v${pinned_version} (installed v${current:-none}) → update required"
+      CHECK_UPDATE_RELEASE="$pinned_version"
+      return 0
+    fi
+
+    # Local newer than pinned → downgrade
+    if [[ "$current_index" -lt "$pinned_index" ]]; then
+      msg_info "${app} pinned to v${pinned_version} (installed newer v${current}) → downgrade required"
       CHECK_UPDATE_RELEASE="$pinned_version"
       return 0
     fi
   fi
 
-  if [[ "$release" != "$current" ]] || [[ ! -f "$current_file" ]]; then
-    CHECK_UPDATE_RELEASE="$release"
-    msg_info "New release available: v${release} (current: v${current:-none})"
+  # --- No pin → compare against latest ---
+  if [[ "$current" != "$latest" ]] || [[ -z "$current" ]]; then
+    CHECK_UPDATE_RELEASE="$latest"
+    msg_info "New release available: v${latest} (current: v${current:-none})"
     return 0
   else
-    msg_ok "${app} is up to date (v${release})"
+    msg_ok "${app} is up to date (v${latest})"
     return 1
   fi
 }
