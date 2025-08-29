@@ -198,8 +198,8 @@ EOF
     $STD apt-get -y autoclean
     msg_ok "Cleaned"
     systemctl restart immich-ml immich-web
-    exit
   fi
+  exit
 }
 
 function compile_libjxl() {
