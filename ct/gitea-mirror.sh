@@ -46,6 +46,39 @@ function update_script() {
     rm -rf /opt/gitea-mirror
   fi
 
+  if [[ ! -f /opt/gitea-mirror.env ]]; then
+      msg_info "Detected old Enviroment, updating files"
+      APP_SECRET=$(openssl rand -base64 32)
+      HOST_IP=$(hostname -I | awk '{print $1}')
+      cat <<EOF >/opt/gitea-mirror.env
+# See here for config options: https://github.com/RayLabsHQ/gitea-mirror/blob/main/docs/ENVIRONMENT_VARIABLES.md
+NODE_ENV=production
+HOST=0.0.0.0
+PORT=4321
+DATABASE_URL=sqlite://data/gitea-mirror.db
+BETTER_AUTH_URL=http://${HOST_IP}:4321
+BETTER_AUTH_SECRET=${APP_SECRET}
+npm_package_version=${APP_VERSION}
+EOF
+    rm /etc/systemd/system/gitea-mirror.service
+    cat <<EOF >/etc/systemd/system/gitea-mirror.service
+[Unit]
+Description=Gitea Mirror
+After=network.target
+[Service]
+Type=simple
+WorkingDirectory=/opt/gitea-mirror
+ExecStart=/usr/local/bin/bun dist/server/entry.mjs
+Restart=on-failure
+RestartSec=10
+EnvironmentFile=/opt/gitea-mirror.env
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    msg_ok "Old Enviroment fixed"
+fi
+
   if check_for_gh_release "gitea-mirror" "RayLabsHQ/gitea-mirror"; then
     msg_info "Stopping Services"
     systemctl stop gitea-mirror
@@ -71,7 +104,8 @@ function update_script() {
     $STD bun run setup
     $STD bun run build
     APP_VERSION=$(grep -o '"version": *"[^"]*"' package.json | cut -d'"' -f4)
-    sudo sed -i.bak "s|^Environment=npm_package_version=.*|Environment=npm_package_version=${APP_VERSION}|" /etc/systemd/system/gitea-mirror.service
+
+    sudo sed -i.bak "s|^npm_package_version=.*|npm_package_version=${APP_VERSION}|" /opt/gitea-mirror.env
     msg_ok "Updated and rebuilt ${APP}"
 
     msg_info "Restoring Data"
@@ -79,7 +113,6 @@ function update_script() {
     msg_ok "Restored Data"
 
     msg_info "Starting Service"
-    systemctl daemon-reload
     systemctl start gitea-mirror
     msg_ok "Service Started"
     msg_ok "Update Successfully"
