@@ -207,7 +207,7 @@ function compile_libjxl() {
   JPEGLI_LIBJPEG_LIBRARY_SOVERSION="62"
   JPEGLI_LIBJPEG_LIBRARY_VERSION="62.3.0"
   # : "${LIBJXL_REVISION:=$(jq -cr '.revision' "$BASE_DIR"/server/sources/libjxl.json)}"
-  : "${LIBJXL_REVISION:=794a5dcf0d54f9f0b20d288a12e87afb91d20dfc"
+  : "${LIBJXL_REVISION:=794a5dcf0d54f9f0b20d288a12e87afb91d20dfc}"
   if [[ "${update:-}" ]] || [[ "$LIBJXL_REVISION" != "$(grep 'libjxl' ~/.immich_library_revisions | awk '{print $2}')" ]]; then
     msg_info "Recompiling libjxl"
     if [[ -d "$SOURCE" ]]; then rm -rf "$SOURCE"; fi
@@ -255,7 +255,7 @@ function compile_libheif() {
     local update="required"
   fi
   # : "${LIBHEIF_REVISION:=$(jq -cr '.revision' "$BASE_DIR"/server/sources/libheif.json)}"
-  : "${LIBHEIF_REVISION:=35dad50a9145332a7bfdf1ff6aef6801fb613d68"
+  : "${LIBHEIF_REVISION:=35dad50a9145332a7bfdf1ff6aef6801fb613d68}"
   if [[ "${update:-}" ]] || [[ "$LIBHEIF_REVISION" != "$(grep 'libheif' ~/.immich_library_revisions | awk '{print $2}')" ]]; then
     msg_info "Recompiling libheif"
     if [[ -d "$SOURCE" ]]; then rm -rf "$SOURCE"; fi
@@ -288,7 +288,7 @@ function compile_libraw() {
   SOURCE=${SOURCE_DIR}/libraw
   local update
   # : "${LIBRAW_REVISION:=$(jq -cr '.revision' "$BASE_DIR"/server/sources/libraw.json)}"
-  : "${LIBRAW_REVISION:=09bea31181b43e97959ee5452d91e5bc66365f1f"
+  : "${LIBRAW_REVISION:=09bea31181b43e97959ee5452d91e5bc66365f1f}"
   if [[ "${update:-}" ]] || [[ "$LIBRAW_REVISION" != "$(grep 'libraw' ~/.immich_library_revisions | awk '{print $2}')" ]]; then
     msg_info "Recompiling libraw"
     if [[ -d "$SOURCE" ]]; then rm -rf "$SOURCE"; fi
@@ -310,7 +310,7 @@ function compile_libraw() {
 function compile_imagemagick() {
   SOURCE=$SOURCE_DIR/imagemagick
   # : "${IMAGEMAGICK_REVISION:=$(jq -cr '.revision' "$BASE_DIR"/server/sources/imagemagick.json)}"
-  : "${IMAGEMAGICK_REVISION:=8289a3388a085ad5ae81aa6812f21554bdfd54f2"
+  : "${IMAGEMAGICK_REVISION:=8289a3388a085ad5ae81aa6812f21554bdfd54f2}"
   if [[ "${update:-}" ]] || [[ "$IMAGEMAGICK_REVISION" != "$(grep 'imagemagick' ~/.immich_library_revisions | awk '{print $2}')" ]]; then
     msg_info "Recompiling ImageMagick"
     if [[ -d "$SOURCE" ]]; then rm -rf "$SOURCE"; fi
@@ -331,7 +331,7 @@ function compile_imagemagick() {
 function compile_libvips() {
   SOURCE=$SOURCE_DIR/libvips
   # : "${LIBVIPS_REVISION:=$(jq -cr '.revision' "$BASE_DIR"/server/sources/libvips.json)}"
-  : "${LIBVIPS_REVISION:=8fa37a64547e392d3808eed8d72adab7e02b3d00"
+  : "${LIBVIPS_REVISION:=8fa37a64547e392d3808eed8d72adab7e02b3d00}"
   if [[ "${update:-}" ]] || [[ "$LIBVIPS_REVISION" != "$(grep 'libvips' ~/.immich_library_revisions | awk '{print $2}')" ]]; then
     msg_info "Recompiling libvips"
     if [[ -d "$SOURCE" ]]; then rm -rf "$SOURCE"; fi
