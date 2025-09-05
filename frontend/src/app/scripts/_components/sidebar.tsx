@@ -8,10 +8,14 @@ function Sidebar({
   items,
   selectedScript,
   setSelectedScript,
+  selectedCategory,
+  setSelectedCategory,
 }: {
   items: Category[];
   selectedScript: string | null;
   setSelectedScript: (script: string | null) => void;
+  selectedCategory: string | null;
+  setSelectedCategory: (category: string | null) => void;
 }) {
   const uniqueScripts = items.reduce((acc, category) => {
     for (const script of category.scripts) {
@@ -37,6 +41,8 @@ function Sidebar({
           items={items}
           selectedScript={selectedScript}
           setSelectedScript={setSelectedScript}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
         />
       </div>
     </div>
