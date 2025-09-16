@@ -77,7 +77,7 @@ function error_handler() {
   post_update_to_api "failed" "$command"
   local error_message="${RD}[ERROR]${CL} in line ${RD}$line_number${CL}: exit code ${RD}$exit_code${CL}: while executing command ${YW}$command${CL}"
   echo -e "\n$error_message\n"
-  #cleanup_vmid
+  cleanup_vmid
 }
 
 function get_valid_nextid() {
@@ -97,12 +97,12 @@ function get_valid_nextid() {
   echo "$try_id"
 }
 
-# function cleanup_vmid() {
-#   if qm status $VMID &>/dev/null; then
-#     qm stop $VMID &>/dev/null
-#     #qm destroy $VMID &>/dev/null
-#   fi
-# }
+function cleanup_vmid() {
+  if qm status $VMID &>/dev/null; then
+    qm stop $VMID &>/dev/null
+    qm destroy $VMID &>/dev/null
+  fi
+}
 
 function cleanup() {
   popd >/dev/null
@@ -588,9 +588,19 @@ msg_ok "Created OpenWrt VM ${CL}${BL}(${HN})"
 msg_info "OpenWrt is being started in order to configure the network interfaces."
 qm start $VMID
 sleep 15
+msg_info "Waiting for OpenWrt to boot..."
+for i in {1..30}; do
+  if qm status "$VMID" | grep -q "running"; then
+    sleep 5
+    msg_ok "OpenWrt is running"
+    break
+  fi
+  sleep 1
+done
+
 msg_ok "Network interfaces are being configured as OpenWrt initiates."
-for _ in {1..30}; do
-  if qm status "$VMID" | grep -q "stopped"; then break; fi
+
+if qm status "$VMID" | grep -q "running"; then
   send_line_to_vm ""
   send_line_to_vm "uci delete network.@device[0]"
   send_line_to_vm "uci set network.wan=interface"
@@ -604,8 +614,11 @@ for _ in {1..30}; do
   send_line_to_vm "uci set network.lan.netmask=${LAN_NETMASK}"
   send_line_to_vm "uci commit"
   send_line_to_vm "halt"
-done
-msg_ok "Network interfaces configured in OpenWrt"
+  msg_ok "Network interfaces configured in OpenWrt"
+else
+  msg_error "VM is not running"
+  exit 1
+fi
 
 msg_info "Waiting for OpenWrt to shut down..."
 until qm status "$VMID" | grep -q "stopped"; do
