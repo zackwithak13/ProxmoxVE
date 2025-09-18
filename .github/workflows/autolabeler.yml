@@ -124,7 +124,7 @@ jobs:
       - name: Load priority config
         id: config
         run: |
-          echo "priority=$(jq -c . .github/label-priority.json)" >> $GITHUB_OUTPUT
+          echo "PRIORITY_JSON=$(jq -c . .github/label-priority.json)" >> $GITHUB_ENV
 
       - name: Fetch PR metadata
         id: pr
@@ -192,7 +192,8 @@ jobs:
           script: |
             const raw = JSON.parse('${{ steps.ai.outputs.labels }}');
             const prNumber = context.payload.pull_request.number;
-            const config = JSON.parse('${{ steps.config.outputs.priority }}');
+            const config = JSON.parse(process.env.PRIORITY_JSON);
+            console.log("Loaded priorities:", config.priorities);
 
             let toApply = [];
             let toSuggest = [];
