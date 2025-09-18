@@ -124,7 +124,7 @@ jobs:
       - name: Load priority config
         id: config
         run: |
-          echo "priority=$(cat .github/label-priority.json)" >> $GITHUB_OUTPUT
+          echo "priority=$(jq -c . .github/label-priority.json)" >> $GITHUB_OUTPUT
 
       - name: Fetch PR metadata
         id: pr
