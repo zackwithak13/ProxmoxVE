@@ -121,11 +121,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # 🔹 Priority-Config laden (kompakt mit jq -c)
       - name: Load priority config
-        id: config
         run: |
           echo "PRIORITY_JSON=$(jq -c . .github/label-priority.json)" >> $GITHUB_ENV
 
+      # 🔹 PR-Daten sammeln
       - name: Fetch PR metadata
         id: pr
         uses: actions/github-script@v7
@@ -137,12 +138,14 @@ jobs:
               repo: context.repo.repo,
               pull_number: pr.number
             });
-            return {
-              title: pr.title,
+            const prData = {
+              title: pr.title || "",
               body: pr.body || "",
               files: files.data.map(f => f.filename)
             };
+            require('fs').writeFileSync(process.env.GITHUB_ENV, `PR_DATA=${JSON.stringify(prData)}\n`, {flag: 'a'});
 
+      # 🔹 AI-Analyse (OpenAI)
       - name: AI Label Review
         id: ai
         uses: actions/github-script@v7
@@ -151,21 +154,17 @@ jobs:
         with:
           script: |
             const fetch = require("node-fetch");
-            const prData = {
-              title: ${{ steps.pr.outputs.title }},
-              body: ${{ steps.pr.outputs.body }},
-              files: ${{ steps.pr.outputs.files }}
-            };
+            const prData = JSON.parse(process.env.PR_DATA);
 
             const prompt = `
             You are a GitHub labeling bot.
             Task:
             - Analyze PR title, body, and file list.
             - For each possible label, return a confidence score (0–1).
-            - Consider conflicts: bugfix vs refactor, feature vs breaking change.
-            - Output JSON: {"labels": [{"name":"bugfix","score":0.9}, {"name":"refactor","score":0.6}]}
+            - If both bugfix and refactor apply, prefer refactor.
+            - Output JSON: {"labels":[{"name":"bugfix","score":0.9},{"name":"refactor","score":0.6}]}
 
-            Valid labels: [new script, update script, delete script, bugfix, feature, breaking change, maintenance, refactor, website, json, api, core, github, addon, pve-tool, vm].
+            Valid labels: [new script, update script, delete script, bugfix, feature, maintenance, refactor, website, json, api, core, github, addon, pve-tool, vm].
 
             PR data: ${JSON.stringify(prData)}
             `;
@@ -178,14 +177,16 @@ jobs:
               },
               body: JSON.stringify({
                 model: "gpt-4.1-mini",
-                messages: [{role: "user", content: prompt}],
+                messages: [{ role: "user", content: prompt }],
                 temperature: 0
               })
             });
+
             const data = await response.json();
             const labels = JSON.parse(data.choices[0].message.content).labels;
             core.setOutput("labels", JSON.stringify(labels));
 
+      # 🔹 Labels anwenden + unsichere vorschlagen
       - name: Apply AI Labels
         uses: actions/github-script@v7
         with:
@@ -193,17 +194,19 @@ jobs:
             const raw = JSON.parse('${{ steps.ai.outputs.labels }}');
             const prNumber = context.payload.pull_request.number;
             const config = JSON.parse(process.env.PRIORITY_JSON);
-            console.log("Loaded priorities:", config.priorities);
 
             let toApply = [];
             let toSuggest = [];
 
             raw.forEach(l => {
               if (l.score >= 0.8) {
-                // check conflicts
                 const conflicts = config.conflicts[l.name] || [];
-                const hasStrongerConflict = conflicts.some(c => 
-                  raw.some(x => x.name === c && x.score >= 0.6 && config.priorities[c] >= config.priorities[l.name])
+                const hasStrongerConflict = conflicts.some(c =>
+                  raw.some(x =>
+                    x.name === c &&
+                    x.score >= 0.6 &&
+                    (config.priorities[c] || 0) >= (config.priorities[l.name] || 0)
+                  )
                 );
                 if (!hasStrongerConflict) {
                   toApply.push(l.name);
