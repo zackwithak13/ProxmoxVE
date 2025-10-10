@@ -22,7 +22,7 @@ curl -fsSL "https://packages.adoptium.net/artifactory/api/gpg/key/public" | gpg 
 cat <<EOF | sudo tee /etc/apt/sources.list.d/adoptium.sources >/dev/null
 Types: deb
 URIs: https://packages.adoptium.net/artifactory/deb
-Suites: trixie
+Suites: bookworm
 Components: main
 Architectures: amd64
 Signed-By: /usr/share/keyrings/adoptium.gpg
