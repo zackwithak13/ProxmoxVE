@@ -27,7 +27,7 @@ chmod +x Tdarr_Updater
 $STD ./Tdarr_Updater
 msg_ok "Installed Tdarr"
 
-sg_info "Setting Up Hardware Acceleration"
+msg_info "Setting Up Hardware Acceleration"
 $STD apt -y install \
   va-driver-all \
   ocl-icd-libopencl1 \
