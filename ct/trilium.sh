@@ -66,8 +66,9 @@ function update_script() {
 
     msg_info "Starting Service"
     systemctl start trilium
+    sleep 1
     msg_ok "Started Service"
-    msg_ok "Updated Successfully!"
+    msg_ok "Updated Successfully"
   fi
   exit
 }
