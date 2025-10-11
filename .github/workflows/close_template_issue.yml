@@ -16,14 +16,28 @@ jobs:
             const content = `${issue.title}\n${issue.body}`;
             const issueNumber = issue.number;
 
-            // Check for tteck script mention
-            if (content.includes("Template debian-13-standard_13.1-2_amd64.tar.zst [local]") || content.includes("Container creation failed. Checking if template is corrupted or incomplete.") || content.includes("Template is valid, but container creation still failed.")){
-              const message = `Hello, it looks like you are referencing a container creation issue!.
+            // Regex patterns (case-insensitive, flexible versioning)
+            const patterns = [
+              /Template\s+debian-13-standard_[\d.]+-[\d]+_amd64\.tar\.zst\s*\[(online|local)\]/i,
+              /Template\s+debian-13-standard_[\d.]+-[\d]+_amd64\.tar\.zst\s+is\s+missing\s+or\s+corrupted/i,
+              /Container\s+creation\s+failed\.?\s+Checking\s+if\s+template\s+is\s+corrupted\s+or\s+incomplete/i,
+              /Template\s+is\s+valid,\s+but\s+container\s+creation\s+still\s+failed/i,
+              /exit\s+code\s+0:\s+while\s+executing\s+command\s+bash\s+-c\s+"\$?\(curl\s+-fsSL\s+https:\/\/raw\.githubusercontent\.com\/[\w/-]+\/create_lxc\.sh\)"/i
+            ];
 
-              We get many simmilar issues with this topic, so please check disscusion #8126.
-              If this did not solve your problem, please reopen this issue.
+            const matched = patterns.some((regex) => regex.test(content));
 
-              This issue is being closed automatically by a bot.`;
+            if (matched) {
+              const message = `👋 Hello!
+
+It looks like you are referencing a **container creation issue with a Debian 13 template** (e.g. \`debian-13-standard_13.x-x_amd64.tar.zst\`).
+
+We receive many similar reports about this, and it’s not related to the scripts themselves but to **a Proxmox base template bug**.
+
+Please refer to [discussion #8126](https://github.com/community-scripts/ProxmoxVE/discussions/8126) for details.  
+If your issue persists after following the guidance there, feel free to reopen this issue.
+
+_This issue was automatically closed by a bot._`;
 
               await github.rest.issues.createComment({
                 ...context.repo,
@@ -31,14 +45,12 @@ jobs:
                 body: message
               });
 
-              // Optionally apply a label like "not planned"
               await github.rest.issues.addLabels({
                 ...context.repo,
                 issue_number: issueNumber,
                 labels: ["not planned"]
               });
 
-              // Close the issue
               await github.rest.issues.update({
                 ...context.repo,
                 issue_number: issueNumber,
