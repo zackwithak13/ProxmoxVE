@@ -14,9 +14,9 @@ network_check
 update_os
 
 msg_info "Installing Proxmox Backup Server"
-curl -fsSL "https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg" -o "/etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg"
+curl -fsSL "https://enterprise.proxmox.com/debian/proxmox-release-trixie.gpg" -o "/etc/apt/trusted.gpg.d/proxmox-release-trixie.gpg"
 cat <<EOF >>/etc/apt/sources.list
-deb http://download.proxmox.com/debian/pbs bookworm pbs-no-subscription
+deb http://download.proxmox.com/debian/pbs trixie pbs-no-subscription
 EOF
 $STD apt update
 export DEBIAN_FRONTEND=noninteractive
