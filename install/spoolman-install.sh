@@ -37,7 +37,7 @@ curl -fsSL "https://github.com/Donkie/Spoolman/releases/download/$RELEASE/spoolm
 $STD unzip spoolman.zip -d spoolman
 rm -rf spoolman.zip
 cd spoolman
-$STD pip3 install -r requirements.txt
+$STD pip3 install --upgrade --ignore-installed -r requirements.txt
 curl -fsSL "https://raw.githubusercontent.com/Donkie/Spoolman/master/.env.example" -o ".env"
 echo "${RELEASE}" >/opt/${APPLICATION}_version.txt
 msg_ok "Installed Spoolman"
