@@ -2320,8 +2320,8 @@ setup_mariadb() {
 function setup_mongodb() {
   local MONGO_VERSION="${MONGO_VERSION:-8.0}"
   local DISTRO_ID DISTRO_CODENAME
-  DISTRO_ID=$(awk -F= '/^ID=/{ gsub(/"/,"",$2); print $2 }' /etc/os-release)
-  DISTRO_CODENAME=$(awk -F= '/^VERSION_CODENAME=/{ print $2 }' /etc/os-release)
+  DISTRO_ID=$(get_os_info id)
+  DISTRO_CODENAME=$(get_os_info codename)
 
   # Check AVX support
   if ! grep -qm1 'avx[^ ]*' /proc/cpuinfo; then
@@ -2348,7 +2348,7 @@ function setup_mongodb() {
   esac
 
   local INSTALLED_VERSION=""
-  if command -v mongod >/dev/null; then
+  if command -v mongod >/dev/null 2>&1; then
     INSTALLED_VERSION=$(mongod --version | awk '/db version/{print $3}' | cut -d. -f1,2)
   fi
 
@@ -2359,14 +2359,8 @@ function setup_mongodb() {
     if [[ "$CACHED_VERSION" == "$MONGO_VERSION" ]]; then
       upgrade_package mongodb-org
     else
-      $STD apt update || {
-        msg_error "Failed to update package list"
-        return 1
-      }
-      $STD apt install --only-upgrade -y mongodb-org || {
-        msg_error "Failed to upgrade MongoDB"
-        return 1
-      }
+      $STD apt update || { msg_error "Failed to update package list"; return 1; }
+      $STD apt install --only-upgrade -y mongodb-org || { msg_error "Failed to upgrade MongoDB"; return 1; }
       cache_installed_version "mongodb" "$MONGO_VERSION"
     fi
     return 0
@@ -2375,26 +2369,29 @@ function setup_mongodb() {
   msg_info "Setup MongoDB $MONGO_VERSION"
 
   if [[ -n "$INSTALLED_VERSION" ]]; then
-    $STD systemctl stop mongod || true
-    $STD apt purge -y mongodb-org || true
+    $STD systemctl stop mongod 2>/dev/null || true
+    $STD apt purge -y mongodb-org 2>/dev/null || true
   fi
 
-  # Cleanup old repository files
   cleanup_old_repo_files "mongodb-org-${MONGO_VERSION}"
-
-  # Cleanup any orphaned .sources files from other apps
   cleanup_orphaned_sources
 
-  # Use helper function to get fallback suite
+  # Determine working suite dynamically via helper
   local SUITE
   SUITE=$(get_fallback_suite "$DISTRO_ID" "$DISTRO_CODENAME" "$MONGO_BASE_URL")
 
-  # Use standardized repo setup
+  # Double-check availability (handles future distro changes automatically)
+  if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
+    msg_warn "MongoDB repo not found for ${DISTRO_ID}-${SUITE}, falling back via get_fallback_suite"
+    SUITE=$(get_fallback_suite "$DISTRO_ID" "$SUITE" "$MONGO_BASE_URL")
+  fi
+
   mkdir -p /etc/apt/keyrings
-  curl -fsSL "https://pgp.mongodb.com/server-${MONGO_VERSION}.asc" | gpg --dearmor --yes -o "/etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg" || {
+  if ! curl -fsSL "https://pgp.mongodb.com/server-${MONGO_VERSION}.asc" \
+      | gpg --dearmor --yes -o "/etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg"; then
     msg_error "Failed to download or import MongoDB GPG key"
     return 1
-  }
+  fi
 
   cat <<EOF >/etc/apt/sources.list.d/mongodb-org-${MONGO_VERSION}.sources
 Types: deb
@@ -2406,7 +2403,7 @@ Signed-By: /etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg
 EOF
 
   $STD apt update || {
-    msg_error "APT update failed — invalid MongoDB repo for ${DISTRO_ID}-${DISTRO_CODENAME}?"
+    msg_error "APT update failed — invalid MongoDB repo for ${DISTRO_ID}-${DISTRO_CODENAME}? (Suite: ${SUITE})"
     return 1
   }
 
@@ -2421,6 +2418,7 @@ EOF
   $STD systemctl enable mongod
   safe_service_restart mongod
   cache_installed_version "mongodb" "$MONGO_VERSION"
+
   msg_ok "Setup MongoDB $MONGO_VERSION"
 }
 
