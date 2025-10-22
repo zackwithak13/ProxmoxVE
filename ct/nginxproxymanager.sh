@@ -27,6 +27,19 @@ function update_script() {
     msg_error "No ${APP} Installation Found!"
     exit
   fi
+  
+  if command -v node &> /dev/null; then
+    CURRENT_NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+    if [[ "$CURRENT_NODE_VERSION" != "22" ]]; then
+      systemctl stop openresty
+      apt-get purge -y nodejs npm
+      apt-get autoremove -y
+      rm -rf /usr/local/bin/node /usr/local/bin/npm
+      rm -rf /usr/local/lib/node_modules
+      rm -rf ~/.npm
+      rm -rf /root/.npm
+    fi
+  fi
 
   NODE_VERSION="22" NODE_MODULE="yarn" setup_nodejs
   export NODE_OPTIONS="--openssl-legacy-provider"
