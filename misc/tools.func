@@ -2359,8 +2359,14 @@ function setup_mongodb() {
     if [[ "$CACHED_VERSION" == "$MONGO_VERSION" ]]; then
       upgrade_package mongodb-org
     else
-      $STD apt update || { msg_error "Failed to update package list"; return 1; }
-      $STD apt install --only-upgrade -y mongodb-org || { msg_error "Failed to upgrade MongoDB"; return 1; }
+      $STD apt update || {
+        msg_error "Failed to update package list"
+        return 1
+      }
+      $STD apt install --only-upgrade -y mongodb-org || {
+        msg_error "Failed to upgrade MongoDB"
+        return 1
+      }
       cache_installed_version "mongodb" "$MONGO_VERSION"
     fi
     return 0
@@ -2387,8 +2393,8 @@ function setup_mongodb() {
   fi
 
   mkdir -p /etc/apt/keyrings
-  if ! curl -fsSL "https://pgp.mongodb.com/server-${MONGO_VERSION}.asc" \
-      | gpg --dearmor --yes -o "/etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg"; then
+  if ! curl -fsSL "https://pgp.mongodb.com/server-${MONGO_VERSION}.asc" |
+    gpg --dearmor --yes -o "/etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg"; then
     msg_error "Failed to download or import MongoDB GPG key"
     return 1
   fi
@@ -2449,8 +2455,14 @@ function setup_mysql() {
       NEED_INSTALL=true
     else
       if apt list --upgradable 2>/dev/null | grep -q '^mysql-server/'; then
-        $STD apt update || { msg_error "Failed to update package list"; return 1; }
-        $STD apt install --only-upgrade -y mysql-server || { msg_error "Failed to upgrade MySQL"; return 1; }
+        $STD apt update || {
+          msg_error "Failed to update package list"
+          return 1
+        }
+        $STD apt install --only-upgrade -y mysql-server || {
+          msg_error "Failed to upgrade MySQL"
+          return 1
+        }
       fi
       return
     fi
@@ -2466,9 +2478,9 @@ function setup_mysql() {
     local SUITE
     if [[ "$DISTRO_ID" == "debian" ]]; then
       case "$DISTRO_CODENAME" in
-        bookworm|bullseye) SUITE="$DISTRO_CODENAME" ;;
-        trixie|forky|sid)  SUITE="bookworm" ;;
-        *)                 SUITE="bookworm" ;;
+      bookworm | bullseye) SUITE="$DISTRO_CODENAME" ;;
+      trixie | forky | sid) SUITE="bookworm" ;;
+      *) SUITE="bookworm" ;;
       esac
     else
       SUITE=$(get_fallback_suite "$DISTRO_ID" "$DISTRO_CODENAME" "https://repo.mysql.com/apt/${DISTRO_ID}")
@@ -2646,7 +2658,7 @@ function setup_nodejs() {
         $STD npm install -g "${MODULE_NAME}@${MODULE_REQ_VERSION}" || {
           msg_error "Failed to install $MODULE_NAME@$MODULE_REQ_VERSION"
           return 1
-        fi
+        }
       fi
     done
   fi
