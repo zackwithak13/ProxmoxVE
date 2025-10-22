@@ -2595,23 +2595,10 @@ function setup_nodejs() {
       return 1
     fi
 
-    # 🧩 Nodesource Node 22.x no longer includes npm → manual fix
     if ! command -v npm >/dev/null 2>&1; then
-      msg_info "Installing npm manually (not included in Node ${NODE_VERSION} package)"
-      local NPM_VERSION="10.9.2"
-      local TMP_DIR="/tmp/npm-install"
-      mkdir -p "$TMP_DIR"
-      curl -fsSL "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o "$TMP_DIR/npm.tgz" || {
-        msg_error "Failed to download npm ${NPM_VERSION}"
-        return 1
-      }
-      cd "$TMP_DIR" && tar -xzf npm.tgz && cd "package"
-      $STD node bin/npm-cli.js install -g "npm@${NPM_VERSION}" || {
-        msg_error "Manual npm installation failed"
-        return 1
-      }
-      cd / && rm -rf "$TMP_DIR"
-      msg_ok "Installed npm ${NPM_VERSION}"
+      msg_warn "npm not found after Node.js install – installing manually"
+      $STD apt install -y npm
+      msg_ok "Installed npm from Debian repository"
     fi
 
     # Update npm to latest (safe if manual install used)
