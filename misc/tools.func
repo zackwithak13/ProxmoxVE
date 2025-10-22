@@ -2399,19 +2399,17 @@ function setup_mongodb() {
     SUITE="buster"
     ;;
   *)
-    # Fallback: try the codename itself
-    SUITE="$DISTRO_CODENAME"
+    # Fallback: try bookworm for unknown releases
+    msg_warn "Unknown Debian release '${DISTRO_CODENAME}', using bookworm"
+    SUITE="bookworm"
     ;;
   esac
 
-  # Verify the repository is available
-  if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
-    msg_warn "MongoDB repo not available for ${DISTRO_ID}-${SUITE}, trying bookworm fallback"
-    SUITE="bookworm"
-    if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
-      msg_error "MongoDB repository not available for ${DISTRO_ID}-${DISTRO_CODENAME} (tried ${DISTRO_CODENAME} and bookworm)"
-      return 1
-    fi
+  # Verify MongoDB repository is available (MongoDB has nested structure)
+  if ! curl -fsSL --max-time 10 "${MONGO_BASE_URL}/dists/${SUITE}/mongodb-org/${MONGO_VERSION}/Release" &>/dev/null; then
+    msg_error "MongoDB ${MONGO_VERSION} repository not available for ${DISTRO_ID}-${SUITE}"
+    msg_error "Please check: ${MONGO_BASE_URL}/dists/${SUITE}/mongodb-org/${MONGO_VERSION}/"
+    return 1
   fi
 
   mkdir -p /etc/apt/keyrings
@@ -2424,8 +2422,8 @@ function setup_mongodb() {
   cat <<EOF >/etc/apt/sources.list.d/mongodb-org-${MONGO_VERSION}.sources
 Types: deb
 URIs: ${MONGO_BASE_URL}
-Suites: ${SUITE}/mongodb-org/${MONGO_VERSION}
-Components: main
+Suites: ${SUITE}
+Components: mongodb-org/${MONGO_VERSION}
 Architectures: amd64 arm64
 Signed-By: /etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg
 EOF
