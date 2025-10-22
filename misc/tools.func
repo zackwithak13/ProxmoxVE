@@ -2405,10 +2405,10 @@ function setup_mongodb() {
   esac
 
   # Verify the repository is available
-  if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
+  if ! verify_repo_available "$MONGO_BASE_URL" "${SUITE}/mongodb-org/${MONGO_VERSION}"; then
     msg_warn "MongoDB repo not available for ${DISTRO_ID}-${SUITE}, trying bookworm fallback"
     SUITE="bookworm"
-    if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
+    if ! verify_repo_available "$MONGO_BASE_URL" "${SUITE}/mongodb-org/${MONGO_VERSION}"; then
       msg_error "MongoDB repository not available for ${DISTRO_ID}-${DISTRO_CODENAME} (tried ${DISTRO_CODENAME} and bookworm)"
       return 1
     fi
