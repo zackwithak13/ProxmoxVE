@@ -2382,19 +2382,36 @@ function setup_mongodb() {
   cleanup_old_repo_files "mongodb-org-${MONGO_VERSION}"
   cleanup_orphaned_sources
 
+  # Map Debian codenames to MongoDB-supported suites
   local SUITE
   case "$DISTRO_CODENAME" in
   trixie | forky | sid)
+    # Debian 13+ and testing/unstable use Bookworm (MongoDB doesn't support newer)
     SUITE="bookworm"
     ;;
+  bookworm)
+    SUITE="bookworm"
+    ;;
+  bullseye)
+    SUITE="bullseye"
+    ;;
+  buster)
+    SUITE="buster"
+    ;;
   *)
-    SUITE=$(get_fallback_suite "$DISTRO_ID" "$DISTRO_CODENAME" "$MONGO_BASE_URL")
+    # Fallback: try the codename itself
+    SUITE="$DISTRO_CODENAME"
     ;;
   esac
 
+  # Verify the repository is available
   if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
-    msg_error "MongoDB repository not available for ${DISTRO_ID}-${SUITE}"
-    return 1
+    msg_warn "MongoDB repo not available for ${DISTRO_ID}-${SUITE}, trying bookworm fallback"
+    SUITE="bookworm"
+    if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
+      msg_error "MongoDB repository not available for ${DISTRO_ID}-${DISTRO_CODENAME} (tried ${DISTRO_CODENAME} and bookworm)"
+      return 1
+    fi
   fi
 
   mkdir -p /etc/apt/keyrings
