@@ -2382,28 +2382,51 @@ function setup_mongodb() {
   cleanup_old_repo_files "mongodb-org-${MONGO_VERSION}"
   cleanup_orphaned_sources
 
-  # Map Debian codenames to MongoDB-supported suites
+  # Map distro codenames to MongoDB-supported suites
   local SUITE
-  case "$DISTRO_CODENAME" in
-  trixie | forky | sid)
-    # Debian 13+ and testing/unstable use Bookworm (MongoDB doesn't support newer)
-    SUITE="bookworm"
-    ;;
-  bookworm)
-    SUITE="bookworm"
-    ;;
-  bullseye)
-    SUITE="bullseye"
-    ;;
-  buster)
-    SUITE="buster"
-    ;;
-  *)
-    # Fallback: try bookworm for unknown releases
-    msg_warn "Unknown Debian release '${DISTRO_CODENAME}', using bookworm"
-    SUITE="bookworm"
-    ;;
-  esac
+  if [[ "$DISTRO_ID" == "debian" ]]; then
+    case "$DISTRO_CODENAME" in
+    trixie | forky | sid)
+      # Debian 13+ and testing/unstable use Bookworm (MongoDB doesn't support newer)
+      SUITE="bookworm"
+      ;;
+    bookworm)
+      SUITE="bookworm"
+      ;;
+    bullseye)
+      SUITE="bullseye"
+      ;;
+    buster)
+      SUITE="buster"
+      ;;
+    *)
+      # Fallback: try bookworm for unknown Debian releases
+      msg_warn "Unknown Debian release '${DISTRO_CODENAME}', using bookworm"
+      SUITE="bookworm"
+      ;;
+    esac
+  elif [[ "$DISTRO_ID" == "ubuntu" ]]; then
+    case "$DISTRO_CODENAME" in
+    oracular | plucky)
+      # Ubuntu 24.10+ uses noble
+      SUITE="noble"
+      ;;
+    noble)
+      SUITE="noble"
+      ;;
+    jammy)
+      SUITE="jammy"
+      ;;
+    focal)
+      SUITE="focal"
+      ;;
+    *)
+      # Fallback: try noble for unknown Ubuntu releases
+      msg_warn "Unknown Ubuntu release '${DISTRO_CODENAME}', using noble"
+      SUITE="noble"
+      ;;
+    esac
+  fi
 
   # Verify MongoDB repository is available (MongoDB has nested structure)
   if ! curl -fsSL --max-time 10 "${MONGO_BASE_URL}/dists/${SUITE}/mongodb-org/${MONGO_VERSION}/Release" &>/dev/null; then
@@ -2413,8 +2436,8 @@ function setup_mongodb() {
   fi
 
   mkdir -p /etc/apt/keyrings
-  if ! curl -fsSL "https://pgp.mongodb.com/server-${MONGO_VERSION}.asc" |
-    gpg --dearmor --yes -o "/etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg"; then
+  if ! curl -fsSL "https://www.mongodb.org/static/pgp/server-${MONGO_VERSION}.asc" |
+    gpg --dearmor --yes -o "/etc/apt/keyrings/mongodb-server-${MONGO_VERSION}.gpg"; then
     msg_error "Failed to download or import MongoDB GPG key"
     return 1
   fi
@@ -2422,10 +2445,10 @@ function setup_mongodb() {
   cat <<EOF >/etc/apt/sources.list.d/mongodb-org-${MONGO_VERSION}.sources
 Types: deb
 URIs: ${MONGO_BASE_URL}
-Suites: ${SUITE}
-Components: mongodb-org/${MONGO_VERSION}
+Suites: ${SUITE}/mongodb-org/${MONGO_VERSION}
+Components: ${REPO_COMPONENT}
 Architectures: amd64 arm64
-Signed-By: /etc/apt/keyrings/mongodb-${MONGO_VERSION}.gpg
+Signed-By: /etc/apt/keyrings/mongodb-server-${MONGO_VERSION}.gpg
 EOF
 
   $STD apt update || {
