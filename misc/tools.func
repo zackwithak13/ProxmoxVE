@@ -477,7 +477,7 @@ get_default_python_version() {
 # ------------------------------------------------------------------------------
 get_default_nodejs_version() {
   # Always return current LTS (as of 2025)
-  echo "20"
+  echo "22"
 }
 
 # ------------------------------------------------------------------------------
@@ -2576,15 +2576,12 @@ function setup_nodejs() {
   if [[ "$NEED_NODE_INSTALL" == true ]]; then
     msg_info "Setup Node.js $NODE_VERSION"
 
-    ensure_dependencies jq
+    ensure_dependencies jq curl ca-certificates
 
-    $STD apt purge -y nodejs
-
-    # Cleanup old repository files
+    $STD apt purge -y nodejs npm || true
     cleanup_old_repo_files "nodesource"
 
-    # NodeSource uses 'nodistro' for all distributions - no fallback needed
-    # Use standardized repo setup
+    # NodeSource uses "nodistro"
     setup_deb822_repo \
       "nodesource" \
       "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key" \
@@ -2598,19 +2595,35 @@ function setup_nodejs() {
       return 1
     fi
 
-    $STD npm install -g npm@latest 2>/dev/null || true
+    # 🧩 Nodesource Node 22.x no longer includes npm → manual fix
+    if ! command -v npm >/dev/null 2>&1; then
+      msg_info "Installing npm manually (not included in Node ${NODE_VERSION} package)"
+      local NPM_VERSION="10.9.2"
+      local TMP_DIR="/tmp/npm-install"
+      mkdir -p "$TMP_DIR"
+      curl -fsSL "https://registry.npmjs.org/npm/-/npm-${NPM_VERSION}.tgz" -o "$TMP_DIR/npm.tgz" || {
+        msg_error "Failed to download npm ${NPM_VERSION}"
+        return 1
+      }
+      cd "$TMP_DIR" && tar -xzf npm.tgz && cd "package"
+      $STD node bin/npm-cli.js install -g "npm@${NPM_VERSION}" || {
+        msg_error "Manual npm installation failed"
+        return 1
+      }
+      cd / && rm -rf "$TMP_DIR"
+      msg_ok "Installed npm ${NPM_VERSION}"
+    fi
+
+    # Update npm to latest (safe if manual install used)
+    $STD npm install -g npm@latest || true
 
     cache_installed_version "nodejs" "$NODE_VERSION"
     msg_ok "Setup Node.js $NODE_VERSION"
   fi
 
   export NODE_OPTIONS="--max-old-space-size=4096"
-
-  if [[ ! -d /opt ]]; then
-    mkdir -p /opt
-  fi
-  cd /opt || {
-    msg_error "Failed to set safe working directory before npm install"
+  mkdir -p /opt && cd /opt || {
+    msg_error "Failed to change directory to /opt"
     return 1
   }
 
@@ -2632,18 +2645,18 @@ function setup_nodejs() {
       if npm list -g --depth=0 "$MODULE_NAME" >/dev/null 2>&1; then
         MODULE_INSTALLED_VERSION="$(npm list -g --depth=0 "$MODULE_NAME" | grep "$MODULE_NAME@" | awk -F@ '{print $2}' | tr -d '[:space:]')"
         if [[ "$MODULE_REQ_VERSION" != "latest" && "$MODULE_REQ_VERSION" != "$MODULE_INSTALLED_VERSION" ]]; then
-          if ! $STD npm install -g "${MODULE_NAME}@${MODULE_REQ_VERSION}"; then
+          $STD npm install -g "${MODULE_NAME}@${MODULE_REQ_VERSION}" || {
             msg_error "Failed to update $MODULE_NAME to version $MODULE_REQ_VERSION"
             return 1
-          fi
+          }
         elif [[ "$MODULE_REQ_VERSION" == "latest" ]]; then
-          if ! $STD npm install -g "${MODULE_NAME}@latest"; then
+          $STD npm install -g "${MODULE_NAME}@latest" || {
             msg_error "Failed to update $MODULE_NAME to latest version"
             return 1
-          fi
+          }
         fi
       else
-        if ! $STD npm install -g "${MODULE_NAME}@${MODULE_REQ_VERSION}"; then
+        $STD npm install -g "${MODULE_NAME}@${MODULE_REQ_VERSION}" || {
           msg_error "Failed to install $MODULE_NAME@$MODULE_REQ_VERSION"
           return 1
         fi
