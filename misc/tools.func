@@ -2382,14 +2382,19 @@ function setup_mongodb() {
   cleanup_old_repo_files "mongodb-org-${MONGO_VERSION}"
   cleanup_orphaned_sources
 
-  # Determine working suite dynamically via helper
   local SUITE
-  SUITE=$(get_fallback_suite "$DISTRO_ID" "$DISTRO_CODENAME" "$MONGO_BASE_URL")
+  case "$DISTRO_CODENAME" in
+  trixie | forky | sid)
+    SUITE="bookworm"
+    ;;
+  *)
+    SUITE=$(get_fallback_suite "$DISTRO_ID" "$DISTRO_CODENAME" "$MONGO_BASE_URL")
+    ;;
+  esac
 
-  # Double-check availability (handles future distro changes automatically)
   if ! verify_repo_available "$MONGO_BASE_URL" "$SUITE"; then
-    msg_warn "MongoDB repo not found for ${DISTRO_ID}-${SUITE}, falling back via get_fallback_suite"
-    SUITE=$(get_fallback_suite "$DISTRO_ID" "$SUITE" "$MONGO_BASE_URL")
+    msg_error "MongoDB repository not available for ${DISTRO_ID}-${SUITE}"
+    return 1
   fi
 
   mkdir -p /etc/apt/keyrings
