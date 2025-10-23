@@ -30,7 +30,7 @@ function update_script() {
   fi
 
   if [[ $(echo ":$PATH:" != *":/usr/local/bin:"*) ]]; then
-    echo 'export PATH="/usr/local/bin:$PATH"' >>~/.bashrc
+    echo -e "\nexport PATH=\"/usr/local/bin:\$PATH\"" >>~/.bashrc
     source ~/.bashrc
     if ! command -v deno &>/dev/null; then
       export DENO_INSTALL="/usr/local"
@@ -110,6 +110,7 @@ EOF
 
     msg_ok "Updated Successfully!"
   fi
+  exit
 }
 
 start
