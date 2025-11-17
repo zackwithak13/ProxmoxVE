@@ -15,7 +15,9 @@ update_os
 
 msg_info "Installing Dependencies"
 $STD apt install -y \
-  build-essential
+  build-essential \
+  libssl-dev \
+  pkg-config
 msg_ok "Installed Dependencies"
 
 PG_VERSION=17 setup_postgresql
@@ -119,7 +121,7 @@ StandardError=journal
 [Install]
 WantedBy=multi-user.target
 EOF
-systemctl  enable -q --now netvisor-daemon
+systemctl enable -q --now netvisor-daemon
 msg_ok "Netvisor server & daemon configured and running"
 
 motd_ssh

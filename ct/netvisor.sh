@@ -8,7 +8,7 @@ source <(curl -fsSL https://raw.githubusercontent.com/community-scripts/ProxmoxV
 APP="NetVisor"
 var_tags="${var_tags:-analytics}"
 var_cpu="${var_cpu:-2}"
-var_ram="${var_ram:-2048}"
+var_ram="${var_ram:-3072}"
 var_disk="${var_disk:-6}"
 var_os="${var_os:-debian}"
 var_version="${var_version:-13}"
@@ -40,6 +40,12 @@ function update_script() {
 
     CLEAN_INSTALL=1 fetch_and_deploy_gh_release "netvisor" "mayanayza/netvisor" "tarball" "latest" "/opt/netvisor"
 
+    if ! dpkg -l | grep -q "pkg-config"; then
+      $STD apt install -y pkg-config
+    fi
+    if ! dpkg -l | grep -q "libssl-dev"; then
+      $STD apt install -y libssl-dev
+    fi
     TOOLCHAIN="$(grep "channel" /opt/netvisor/backend/rust-toolchain.toml | awk -F\" '{print $2}')"
     RUST_TOOLCHAIN=$TOOLCHAIN setup_rust
 
