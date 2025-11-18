@@ -53,8 +53,8 @@ function update_script() {
     grep "tag_name" |
     awk '{print substr($2, 3, length($2)-4) }')
 
-  fetch_and_deploy_gh_release "nginxproxymanager" "NginxProxyManager/nginx-proxy-manager"
-
+  CLEAN_INSTALL=1 fetch_and_deploy_gh_release "nginxproxymanager" "NginxProxyManager/nginx-proxy-manager"
+  
   msg_info "Stopping Services"
   systemctl stop openresty
   systemctl stop npm
