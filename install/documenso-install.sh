@@ -74,7 +74,6 @@ export NODE_OPTIONS="--max-old-space-size=4096"
 $STD turbo prune --scope=@documenso/remix --docker
 cd out
 cp -r json/* .
-cp package-lock.json .
 $STD npm ci
 cp -r full/* .
 $STD turbo run build --filter=@documenso/remix
