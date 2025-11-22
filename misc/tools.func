@@ -3632,6 +3632,18 @@ function setup_php() {
   if [[ -n "$CURRENT_PHP" && "$CURRENT_PHP" == "$PHP_VERSION" ]]; then
     msg_info "Update PHP $PHP_VERSION"
 
+    # Ensure pinning exists even for updates (prevent unwanted version changes)
+    mkdir -p /etc/apt/preferences.d
+    cat <<EOF >/etc/apt/preferences.d/php-pin
+Package: php${PHP_VERSION}*
+Pin: version ${PHP_VERSION}.*
+Pin-Priority: 1001
+
+Package: php[0-9].*
+Pin: release o=packages.sury.org-php
+Pin-Priority: -1
+EOF
+
     # Ensure Sury repo is available
     if [[ ! -f /etc/apt/sources.list.d/php.sources ]]; then
       manage_tool_repository "php" "$PHP_VERSION" "" "https://packages.sury.org/debsuryorg-archive-keyring.deb" || {
@@ -3641,6 +3653,7 @@ function setup_php() {
     fi
 
     ensure_apt_working || return 1
+    $STD apt-get update
 
     # Perform upgrade with retry logic (non-fatal if fails)
     upgrade_packages_with_retry "php${PHP_VERSION}" || true
@@ -3653,16 +3666,34 @@ function setup_php() {
       msg_info "Upgrade PHP from $CURRENT_PHP to $PHP_VERSION"
       # Stop and disable ALL PHP-FPM versions
       stop_all_services "php.*-fpm"
-      remove_old_tool_version "php"
     else
       msg_info "Setup PHP $PHP_VERSION"
     fi
+
+    # Create APT pinning BEFORE any repo changes to ensure correct version is selected
+    mkdir -p /etc/apt/preferences.d
+    cat <<EOF >/etc/apt/preferences.d/php-pin
+Package: php${PHP_VERSION}*
+Pin: version ${PHP_VERSION}.*
+Pin-Priority: 1001
+
+Package: php[0-9].*
+Pin: release o=packages.sury.org-php
+Pin-Priority: -1
+EOF
 
     # Prepare repository (cleanup + validation)
     prepare_repository_setup "php" "deb.sury.org-php" || {
       msg_error "Failed to prepare PHP repository"
       return 1
     }
+
+    # Remove ALL conflicting PHP versions (critical for version enforcement)
+    if [[ -n "$CURRENT_PHP" && "$CURRENT_PHP" != "$PHP_VERSION" ]]; then
+      msg_info "Removing PHP ${CURRENT_PHP}"
+      $STD apt-get purge -y "php${CURRENT_PHP}*" "libapache2-mod-php${CURRENT_PHP}*" 2>/dev/null || true
+      $STD apt-get autoremove -y 2>/dev/null || true
+    fi
 
     # Setup Sury repository
     manage_tool_repository "php" "$PHP_VERSION" "" "https://packages.sury.org/debsuryorg-archive-keyring.deb" || {
@@ -3671,18 +3702,6 @@ function setup_php() {
     }
 
     ensure_apt_working || return 1
-
-    # Force version preference during installation
-    mkdir -p /etc/apt/preferences.d
-    cat <<EOF >/etc/apt/preferences.d/php-pin
-Package: php${PHP_VERSION}*
-Pin: version ${PHP_VERSION}.*
-Pin-Priority: 1001
-
-Package: php8.*
-Pin: release o=packages.sury.org-php
-Pin-Priority: -1
-EOF
     $STD apt-get update
   fi
 
@@ -3698,26 +3717,36 @@ EOF
   # Build module list with version constraints
   local MODULE_LIST="php${PHP_VERSION}=${AVAILABLE_PHP_VERSION}-*"
   local FAILED_MODULES=()
+  local INSTALLED_MODULES=()
 
   IFS=',' read -ra MODULES <<<"$COMBINED_MODULES"
   for mod in "${MODULES[@]}"; do
-    if apt-cache show "php${PHP_VERSION}-${mod}" 2>/dev/null | grep -q "^Package:"; then
-      MODULE_LIST+=" php${PHP_VERSION}-${mod}=${AVAILABLE_PHP_VERSION}-*"
+    local pkg_name="php${PHP_VERSION}-${mod}"
+    if apt-cache search "^${pkg_name}\$" 2>/dev/null | grep -q "^${pkg_name}"; then
+      MODULE_LIST+=" ${pkg_name}=${AVAILABLE_PHP_VERSION}-*"
+      INSTALLED_MODULES+=("${pkg_name}")
     else
-      FAILED_MODULES+=("php${PHP_VERSION}-${mod}")
+      FAILED_MODULES+=("${pkg_name}")
     fi
   done
 
   if [[ "$PHP_FPM" == "YES" ]]; then
-    if apt-cache show "php${PHP_VERSION}-fpm" 2>/dev/null | grep -q "^Package:"; then
-      MODULE_LIST+=" php${PHP_VERSION}-fpm=${AVAILABLE_PHP_VERSION}-*"
+    local fpm_pkg="php${PHP_VERSION}-fpm"
+    if apt-cache search "^${fpm_pkg}\$" 2>/dev/null | grep -q "^${fpm_pkg}"; then
+      MODULE_LIST+=" ${fpm_pkg}=${AVAILABLE_PHP_VERSION}-*"
+      INSTALLED_MODULES+=("${fpm_pkg}")
     else
-      FAILED_MODULES+=("php${PHP_VERSION}-fpm")
+      FAILED_MODULES+=("${fpm_pkg}")
     fi
   fi
 
+  # Only warn if there are genuinely missing modules
   if [[ ${#FAILED_MODULES[@]} -gt 0 ]]; then
-    msg_warn "Some modules unavailable for PHP ${PHP_VERSION}: ${FAILED_MODULES[*]}"
+    msg_warn "Modules not available for PHP ${PHP_VERSION}: ${FAILED_MODULES[*]}"
+  fi
+
+  if [[ ${#INSTALLED_MODULES[@]} -gt 0 ]]; then
+    msg_info "Will install modules: ${INSTALLED_MODULES[*]}"
   fi
 
   # install apache2 with PHP support if requested
