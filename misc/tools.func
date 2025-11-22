@@ -3671,16 +3671,16 @@ EOF
     return 1
   fi
 
-  # Build module list - don't pre-check, let apt-get handle it
-  local MODULE_LIST="php${PHP_VERSION}=${AVAILABLE_PHP_VERSION}-*"
+  # Build module list - without version pinning (preferences.d handles it)
+  local MODULE_LIST="php${PHP_VERSION}"
 
   IFS=',' read -ra MODULES <<<"$COMBINED_MODULES"
   for mod in "${MODULES[@]}"; do
-    MODULE_LIST+=" php${PHP_VERSION}-${mod}=${AVAILABLE_PHP_VERSION}-*"
+    MODULE_LIST+=" php${PHP_VERSION}-${mod}"
   done
 
   if [[ "$PHP_FPM" == "YES" ]]; then
-    MODULE_LIST+=" php${PHP_VERSION}-fpm=${AVAILABLE_PHP_VERSION}-*"
+    MODULE_LIST+=" php${PHP_VERSION}-fpm"
   fi
 
   # install apache2 with PHP support if requested
@@ -3691,17 +3691,14 @@ EOF
         msg_error "Failed to install Apache"
         return 1
       }
-      install_packages_with_retry "libapache2-mod-php${PHP_VERSION}=${AVAILABLE_PHP_VERSION}-*" || {
+      install_packages_with_retry "libapache2-mod-php${PHP_VERSION}" || {
         msg_warn "Failed to install libapache2-mod-php${PHP_VERSION}, continuing without Apache module"
       }
     fi
   fi
 
-  # Install PHP packages with explicit version constraints
-  msg_info "Installing PHP ${PHP_VERSION} packages (version ${AVAILABLE_PHP_VERSION})"
+  # Install PHP packages (pinning via preferences.d ensures correct version)
   if ! install_packages_with_retry $MODULE_LIST; then
-    msg_warn "Failed to install PHP packages with version constraints, attempting individual installation"
-
     # Install main package first (critical)
     install_packages_with_retry "php${PHP_VERSION}" || {
       msg_error "Failed to install php${PHP_VERSION}"
@@ -3710,25 +3707,19 @@ EOF
 
     # Try to install Apache module individually if requested
     if [[ "$PHP_APACHE" == "YES" ]]; then
-      install_packages_with_retry "libapache2-mod-php${PHP_VERSION}" || {
-        msg_warn "Could not install libapache2-mod-php${PHP_VERSION}"
-      }
+      install_packages_with_retry "libapache2-mod-php${PHP_VERSION}" || true
     fi
 
     # Try to install modules individually - skip those that don't exist
     for pkg in "${MODULES[@]}"; do
       if apt-cache search "^php${PHP_VERSION}-${pkg}\$" 2>/dev/null | grep -q "^php${PHP_VERSION}-${pkg}"; then
-        install_packages_with_retry "php${PHP_VERSION}-${pkg}" || {
-          msg_warn "Could not install php${PHP_VERSION}-${pkg}"
-        }
+        install_packages_with_retry "php${PHP_VERSION}-${pkg}" || true
       fi
     done
 
     if [[ "$PHP_FPM" == "YES" ]]; then
       if apt-cache search "^php${PHP_VERSION}-fpm\$" 2>/dev/null | grep -q "^php${PHP_VERSION}-fpm"; then
-        install_packages_with_retry "php${PHP_VERSION}-fpm" || {
-          msg_warn "Could not install php${PHP_VERSION}-fpm"
-        }
+        install_packages_with_retry "php${PHP_VERSION}-fpm" || true
       fi
     fi
   fi
