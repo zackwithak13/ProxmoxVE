@@ -3671,35 +3671,91 @@ function setup_php() {
     }
 
     ensure_apt_working || return 1
+
+    # Force version preference during installation
+    mkdir -p /etc/apt/preferences.d
+    cat <<EOF >/etc/apt/preferences.d/php-pin
+Package: php${PHP_VERSION}*
+Pin: version ${PHP_VERSION}.*
+Pin-Priority: 1001
+
+Package: php8.*
+Pin: release o=packages.sury.org-php
+Pin-Priority: -1
+EOF
+    $STD apt-get update
   fi
 
-  # Build module list
-  local MODULE_LIST="php${PHP_VERSION}"
+  # Get available PHP version from repository
+  local AVAILABLE_PHP_VERSION=""
+  AVAILABLE_PHP_VERSION=$(apt-cache show "php${PHP_VERSION}" 2>/dev/null | grep -m1 "^Version:" | awk '{print $2}' | cut -d- -f1) || true
+
+  if [[ -z "$AVAILABLE_PHP_VERSION" ]]; then
+    msg_error "PHP ${PHP_VERSION} not found in configured repositories"
+    return 1
+  fi
+
+  # Build module list with version constraints
+  local MODULE_LIST="php${PHP_VERSION}=${AVAILABLE_PHP_VERSION}-*"
+  local FAILED_MODULES=()
+
   IFS=',' read -ra MODULES <<<"$COMBINED_MODULES"
   for mod in "${MODULES[@]}"; do
-    if apt-cache show "php${PHP_VERSION}-${mod}" >/dev/null 2>&1; then
-      MODULE_LIST+=" php${PHP_VERSION}-${mod}"
+    if apt-cache show "php${PHP_VERSION}-${mod}" 2>/dev/null | grep -q "^Package:"; then
+      MODULE_LIST+=" php${PHP_VERSION}-${mod}=${AVAILABLE_PHP_VERSION}-*"
+    else
+      FAILED_MODULES+=("php${PHP_VERSION}-${mod}")
     fi
   done
+
   if [[ "$PHP_FPM" == "YES" ]]; then
-    MODULE_LIST+=" php${PHP_VERSION}-fpm"
+    if apt-cache show "php${PHP_VERSION}-fpm" 2>/dev/null | grep -q "^Package:"; then
+      MODULE_LIST+=" php${PHP_VERSION}-fpm=${AVAILABLE_PHP_VERSION}-*"
+    else
+      FAILED_MODULES+=("php${PHP_VERSION}-fpm")
+    fi
+  fi
+
+  if [[ ${#FAILED_MODULES[@]} -gt 0 ]]; then
+    msg_warn "Some modules unavailable for PHP ${PHP_VERSION}: ${FAILED_MODULES[*]}"
   fi
 
   # install apache2 with PHP support if requested
   if [[ "$PHP_APACHE" == "YES" ]]; then
     if ! dpkg -l 2>/dev/null | grep -q "libapache2-mod-php${PHP_VERSION}"; then
-      install_packages_with_retry "apache2" "libapache2-mod-php${PHP_VERSION}" || {
-        msg_error "Failed to install Apache with PHP module"
+      msg_info "Installing Apache with PHP ${PHP_VERSION} module"
+      install_packages_with_retry "apache2" || {
+        msg_error "Failed to install Apache"
         return 1
+      }
+      install_packages_with_retry "libapache2-mod-php${PHP_VERSION}=${AVAILABLE_PHP_VERSION}-*" || {
+        msg_warn "Failed to install libapache2-mod-php${PHP_VERSION}, continuing without Apache module"
       }
     fi
   fi
 
-  # Install PHP packages with retry logic
-  install_packages_with_retry $MODULE_LIST || {
-    msg_error "Failed to install PHP packages"
-    return 1
-  }
+  # Install PHP packages with explicit version constraints
+  msg_info "Installing PHP ${PHP_VERSION} packages (version ${AVAILABLE_PHP_VERSION})"
+  if ! install_packages_with_retry $MODULE_LIST; then
+    msg_warn "Failed to install PHP packages with version constraints, attempting without version pins"
+    install_packages_with_retry "php${PHP_VERSION}" || {
+      msg_error "Failed to install php${PHP_VERSION}"
+      return 1
+    }
+
+    # Try to install modules individually without version constraint
+    for pkg in "${MODULES[@]}"; do
+      install_packages_with_retry "php${PHP_VERSION}-${pkg}" || {
+        msg_warn "Could not install php${PHP_VERSION}-${pkg}"
+      }
+    done
+
+    if [[ "$PHP_FPM" == "YES" ]]; then
+      install_packages_with_retry "php${PHP_VERSION}-fpm" || {
+        msg_warn "Could not install php${PHP_VERSION}-fpm"
+      }
+    fi
+  fi
   cache_installed_version "php" "$PHP_VERSION"
 
   # Patch all relevant php.ini files
@@ -3735,7 +3791,24 @@ function setup_php() {
     fi
   fi
 
-  msg_ok "Setup PHP $PHP_VERSION"
+  # Verify PHP installation - critical check
+  if ! command -v php >/dev/null 2>&1; then
+    msg_error "PHP installation verification failed - php command not found"
+    return 1
+  fi
+
+  local INSTALLED_VERSION=$(php -v 2>/dev/null | awk '/^PHP/{print $2}' | cut -d. -f1,2)
+
+  # Critical: if major.minor doesn't match, fail and cleanup
+  if [[ "$INSTALLED_VERSION" != "$PHP_VERSION" ]]; then
+    msg_error "PHP version mismatch: requested ${PHP_VERSION} but got ${INSTALLED_VERSION}"
+    msg_error "This indicates a critical package installation issue"
+    # Don't cache wrong version
+    return 1
+  fi
+
+  cache_installed_version "php" "$INSTALLED_VERSION"
+  msg_ok "Setup PHP ${INSTALLED_VERSION}"
 }
 
 # ------------------------------------------------------------------------------
