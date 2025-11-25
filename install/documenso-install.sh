@@ -73,9 +73,11 @@ export CYPRESS_INSTALL_BINARY=0
 export NODE_OPTIONS="--max-old-space-size=4096"
 $STD turbo prune --scope=@documenso/remix --docker
 cd out
-cp -r json/* .
+$STD cp ../lingui.config.ts .
+$STD cp ../turbo.json .
+$STD cp -r json/* .
 $STD npm ci
-cp -r full/* .
+$STD cp -r full/* .
 $STD turbo run build --filter=@documenso/remix
 $STD npm run prisma:migrate-deploy
 echo "${RELEASE}" >"/opt/${APPLICATION}_version.txt"
