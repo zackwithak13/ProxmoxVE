@@ -37,7 +37,7 @@ function update_script() {
     msg_ok "Stopped Service"
 
     msg_info "Backing up Configuration"
-    cp -f /opt/mealie/mealie.env /opt/mealie/mealie.env.bak
+    cp -f /opt/mealie/mealie.env /opt/mealie.env
     msg_ok "Backup completed"
 
     CLEAN_INSTALL=1 fetch_and_deploy_gh_release "mealie" "mealie-recipes/mealie" "tarball" "latest" "/opt/mealie"
@@ -70,7 +70,7 @@ function update_script() {
     msg_ok "Updated NLTK Data"
 
     msg_info "Restoring Configuration"
-    mv -f /opt/mealie/mealie.env.bak /opt/mealie/mealie.env
+    mv -f /opt/mealie.env /opt/mealie/mealie.env
     cat <<'STARTEOF' >/opt/mealie/start.sh
 #!/bin/bash
 set -a
