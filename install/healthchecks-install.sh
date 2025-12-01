@@ -73,9 +73,9 @@ COMPRESS_OFFLINE = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': '${DB_NAME}',
-        'USER': '${DB_USER}',
-        'PASSWORD': '${DB_PASS}',
+        'NAME': '${PG_DB_NAME}',
+        'USER': '${PG_DB_USER}',
+        'PASSWORD': '${PG_DB_PASS}',
         'HOST': '127.0.0.1',
         'PORT': '5432',
         'TEST': {'CHARSET': 'UTF8'}
