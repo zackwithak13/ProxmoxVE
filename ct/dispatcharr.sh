@@ -87,6 +87,11 @@ function update_script() {
       mv /tmp/start-daphne.sh.backup /opt/dispatcharr/start-daphne.sh
     fi
 
+    if ! grep -q "DJANGO_SECRET_KEY" /opt/dispatcharr/.env; then
+        DJANGO_SECRET=$(openssl rand -base64 48 | tr -dc 'a-zA-Z0-9' | cut -c1-50)
+        echo "DJANGO_SECRET_KEY=$DJANGO_SECRET" >> /opt/dispatcharr/.env
+    fi
+
     cd /opt/dispatcharr
     rm -rf .venv
     $STD uv venv
