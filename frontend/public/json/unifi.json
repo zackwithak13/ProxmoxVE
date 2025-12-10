@@ -9,7 +9,7 @@
   "updateable": true,
   "privileged": false,
   "interface_port": 8443,
-  "documentation": null,
+  "documentation": "https://help.ui.com/hc/en-us/articles/360012282453-Self-Hosting-a-UniFi-Network-Server",
   "website": "https://www.ui.com/",
   "logo": "https://cdn.jsdelivr.net/gh/selfhst/icons@main/webp/ubiquiti-unifi.webp",
   "config_path": "",
