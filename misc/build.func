@@ -445,9 +445,11 @@ base_settings() {
 # - Safe parser for KEY=VALUE lines from vars files
 # - Used by default_var_settings and app defaults loading
 # - Only loads whitelisted var_* keys
+# - Optional force parameter to override existing values (for app defaults)
 # ------------------------------------------------------------------------------
 load_vars_file() {
   local file="$1"
+  local force="${2:-no}" # If "yes", override existing variables
   [ -f "$file" ] || return 0
   msg_info "Loading defaults from ${file}"
 
@@ -485,8 +487,12 @@ load_vars_file() {
         var_val="${BASH_REMATCH[1]}"
       fi
 
-      # Set only if not already exported
-      [[ -z "${!var_key+x}" ]] && export "${var_key}=${var_val}"
+      # Set variable: force mode overrides existing, otherwise only set if empty
+      if [[ "$force" == "yes" ]]; then
+        export "${var_key}=${var_val}"
+      else
+        [[ -z "${!var_key+x}" ]] && export "${var_key}=${var_val}"
+      fi
     fi
   done <"$file"
   msg_ok "Loaded ${file}"
@@ -2148,7 +2154,7 @@ install_script() {
         header_info
         echo -e "${DEFAULT}${BOLD}${BL}Using App Defaults for ${APP} on node $PVEHOST_NAME${CL}"
         METHOD="appdefaults"
-        load_vars_file "$(get_app_defaults_path)"
+        load_vars_file "$(get_app_defaults_path)" "yes" # Force override script defaults
         base_settings
         echo_default
         defaults_target="$(get_app_defaults_path)"
