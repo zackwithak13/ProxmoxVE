@@ -240,10 +240,9 @@ This project is maintained by volunteers in memory of tteck. Your support helps 
 ---
 
 ## 📈 Project Statistics
-
 <p align="center">
   <img
-    src="https://repobeats.axiom.co/api/embed/c5cc834f4822cbef1745a4f3fb40d7c687a0e7e7.svg"
+    src="https://repobeats.axiom.co/api/embed/57edde03e00f88d739bdb5b844ff7d07dd079375.svg"
     alt="Repobeats analytics"
     width="650"
   />
