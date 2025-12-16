@@ -588,12 +588,21 @@ load_vars_file() {
       [[ "$var_key" != var_* ]] && continue
       _is_whitelisted "$var_key" || continue
 
+      # Strip inline comments (anything after unquoted #)
+      # Only strip if not inside quotes
+      if [[ ! "$var_val" =~ ^[\"\'] ]]; then
+        var_val="${var_val%%#*}"
+      fi
+
       # Strip quotes
       if [[ "$var_val" =~ ^\"(.*)\"$ ]]; then
         var_val="${BASH_REMATCH[1]}"
       elif [[ "$var_val" =~ ^\'(.*)\'$ ]]; then
         var_val="${BASH_REMATCH[1]}"
       fi
+
+      # Trim trailing whitespace
+      var_val="${var_val%"${var_val##*[![:space:]]}"}"
 
       # Set variable: force mode overrides existing, otherwise only set if empty
       if [[ "$force" == "yes" ]]; then
