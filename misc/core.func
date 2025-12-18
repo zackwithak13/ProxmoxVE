@@ -817,9 +817,10 @@ cleanup_lxc() {
 
   # Node.js npm
   if command -v npm &>/dev/null; then
-    $STD npm cache verify 2>/dev/null || true
-    # Clean cache with fallback to manual removal if command fails
-    $STD npm cache clean --force 2>/dev/null || rm -rf /root/.npm/_cacache 2>/dev/null || true
+    npm cache verify &>/dev/null || true
+    # Directly remove cache directory instead of using npm cache clean
+    # which can fail with ENOTEMPTY errors
+    rm -rf /root/.npm/_cacache 2>/dev/null || true
   fi
   # Node.js yarn
   if command -v yarn &>/dev/null; then $STD yarn cache clean || true; fi
