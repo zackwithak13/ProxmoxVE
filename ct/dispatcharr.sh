@@ -32,6 +32,16 @@ function update_script() {
   setup_uv
   NODE_VERSION="24" setup_nodejs
 
+  # Fix for nginx not allowing large files
+  if ! grep -q "client_max_body_size 100M;" /etc/nginx/sites-available/dispatcharr.conf; then
+    sed -i '/server_name _;/a \    client_max_body_size 100M;' /etc/nginx/sites-available/dispatcharr.conf
+    systemctl reload nginx
+  fi
+
+  if ! dpkg -s vlc-bin vlc-plugin-base &>/dev/null; then
+    $STD apt update && $STD apt install -y vlc-bin vlc-plugin-base
+  fi
+
   if check_for_gh_release "Dispatcharr" "Dispatcharr/Dispatcharr"; then
     msg_info "Stopping Services"
     systemctl stop dispatcharr-celery
