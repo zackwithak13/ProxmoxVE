@@ -2577,8 +2577,8 @@ function setup_gs() {
 # ------------------------------------------------------------------------------
 function setup_hwaccel() {
   # Check if user explicitly disabled GPU in advanced settings
-  if [[ "${var_gpu:-no}" == "no" ]]; then
-    msg_info "GPU acceleration disabled by user (var_gpu=no) - skipping setup"
+  # ENABLE_GPU is exported from build.func
+  if [[ "${ENABLE_GPU:-no}" == "no" ]]; then
     return 0
   fi
 
