@@ -2645,7 +2645,7 @@ function setup_hwaccel() {
       GPU_LIST+=("$pci_addr")
       GPU_TYPES+=("$gpu_type")
       GPU_NAMES+=("$gpu_name")
-      ((gpu_count++))
+      ((gpu_count++)) || true
     fi
   done < <(lspci 2>/dev/null | grep -Ei 'vga|3d|display')
 
@@ -2658,7 +2658,7 @@ function setup_hwaccel() {
       GPU_LIST+=("integrated")
       GPU_TYPES+=("AMD_APU")
       GPU_NAMES+=("AMD APU (Integrated Graphics)")
-      ((gpu_count++))
+      ((gpu_count++)) || true
     else
       msg_warn "No GPU detected - skipping hardware acceleration setup"
       return 0
@@ -4201,14 +4201,14 @@ function setup_nodejs() {
           msg_info "Updating $MODULE_NAME from v$MODULE_INSTALLED_VERSION to v$MODULE_REQ_VERSION"
           if ! $STD npm install -g "${MODULE_NAME}@${MODULE_REQ_VERSION}" 2>/dev/null; then
             msg_warn "Failed to update $MODULE_NAME to version $MODULE_REQ_VERSION"
-            ((failed_modules++))
+            ((failed_modules++)) || true
             continue
           fi
         elif [[ "$MODULE_REQ_VERSION" == "latest" ]]; then
           msg_info "Updating $MODULE_NAME to latest version"
           if ! $STD npm install -g "${MODULE_NAME}@latest" 2>/dev/null; then
             msg_warn "Failed to update $MODULE_NAME to latest version"
-            ((failed_modules++))
+            ((failed_modules++)) || true
             continue
           fi
         fi
@@ -4216,7 +4216,7 @@ function setup_nodejs() {
         msg_info "Installing $MODULE_NAME@$MODULE_REQ_VERSION"
         if ! $STD npm install -g "${MODULE_NAME}@${MODULE_REQ_VERSION}" 2>/dev/null; then
           msg_warn "Failed to install $MODULE_NAME@$MODULE_REQ_VERSION"
-          ((failed_modules++))
+          ((failed_modules++)) || true
           continue
         fi
       fi
