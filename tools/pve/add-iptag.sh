@@ -842,8 +842,10 @@ update_all_tags() {
     else
         # More efficient: direct file listing instead of ls+sed
         vmids=()
-        for conf in /etc/pve/qemu-server/*.conf 2>/dev/null; do
-            [[ -f "$conf" ]] && vmids+=("${conf##*/}" | sed 's/\.conf$//')
+        for conf in /etc/pve/qemu-server/*.conf; do
+            [[ -f "$conf" ]] || continue
+            local basename="${conf##*/}"
+            vmids+=("${basename%.conf}")
         done
     fi
     
