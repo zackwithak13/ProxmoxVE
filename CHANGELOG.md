@@ -24,6 +24,7 @@ Exercise vigilance regarding copycat or coat-tailing sites that seek to exploit 
 
   - #### ✨ New Features
 
+    - Apache Guacamole: add schema upgrades and extension updates [@MickLesk](https://github.com/MickLesk) ([#10746](https://github.com/community-scripts/ProxmoxVE/pull/10746))
     - Apache Tomcat: update support and refactor install script + debian 13 [@MickLesk](https://github.com/MickLesk) ([#10739](https://github.com/community-scripts/ProxmoxVE/pull/10739))
     - Apache Guacamole: Function Bump + update_script [@MickLesk](https://github.com/MickLesk) ([#10728](https://github.com/community-scripts/ProxmoxVE/pull/10728))
     - Apache CouchDB: bump to debian 13 and add update support [@MickLesk](https://github.com/MickLesk) ([#10721](https://github.com/community-scripts/ProxmoxVE/pull/10721))
