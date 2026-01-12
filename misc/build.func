@@ -2985,17 +2985,20 @@ $PCT_OPTIONS_STRING"
   export TEMPLATE_STORAGE="${var_template_storage:-}"
   export CONTAINER_STORAGE="${var_container_storage:-}"
 
-  # Validate storage space before attempting container creation
-  msg_info "Validating storage space"
-  if ! validate_storage_space "$CONTAINER_STORAGE" "$DISK_SIZE" "no"; then
-    local free_space
-    free_space=$(pvesm status 2>/dev/null | awk -v s="$CONTAINER_STORAGE" '$1 == s { print $6 }')
-    local free_fmt
-    free_fmt=$(numfmt --to=iec --from-unit=1024 --suffix=B --format %.1f "$free_space" 2>/dev/null || echo "${free_space}KB")
-    msg_error "Not enough space on '$CONTAINER_STORAGE'. Required: ${DISK_SIZE}GB, Available: ${free_fmt}"
-    exit 214
+  # Validate storage space only if CONTAINER_STORAGE is already set
+  # (Storage selection happens in create_lxc_container for some modes)
+  if [[ -n "$CONTAINER_STORAGE" ]]; then
+    msg_info "Validating storage space"
+    if ! validate_storage_space "$CONTAINER_STORAGE" "$DISK_SIZE" "no"; then
+      local free_space
+      free_space=$(pvesm status 2>/dev/null | awk -v s="$CONTAINER_STORAGE" '$1 == s { print $6 }')
+      local free_fmt
+      free_fmt=$(numfmt --to=iec --from-unit=1024 --suffix=B --format %.1f "$free_space" 2>/dev/null || echo "${free_space}KB")
+      msg_error "Not enough space on '$CONTAINER_STORAGE'. Required: ${DISK_SIZE}GB, Available: ${free_fmt}"
+      exit 214
+    fi
+    msg_ok "Storage space validated"
   fi
-  msg_ok "Storage space validated"
 
   create_lxc_container || exit $?
 
