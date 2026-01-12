@@ -127,21 +127,18 @@ function update() {
 # INSTALL
 # ==============================================================================
 function install() {
-  local NODE_VER="22"
-  local PG_VER="17"
-
   # Setup Node.js (only installs if not present or different version)
   if command -v node &>/dev/null; then
     msg_ok "Node.js already installed ($(node -v))"
   else
-    NODE_VERSION="${NODE_VER}" setup_nodejs
+    NODE_VERSION="22" setup_nodejs
   fi
 
   # Setup PostgreSQL (only installs if not present)
   if command -v psql &>/dev/null; then
     msg_ok "PostgreSQL already installed"
   else
-    PG_VERSION="${PG_VER}" setup_postgresql
+    PG_VERSION="17" setup_postgresql
   fi
 
   # Create database and user (skip if already exists)
@@ -354,13 +351,11 @@ if [[ -d "$INSTALL_PATH" && -f "$INSTALL_PATH/package.json" ]]; then
 fi
 
 # Fresh installation
-local NODE_VER="22"
-local PG_VER="17"
 msg_warn "${APP} is not installed."
 echo ""
 echo -e "${TAB}${INFO} This will install:"
-echo -e "${TAB}  - Node.js ${NODE_VER}"
-echo -e "${TAB}  - PostgreSQL ${PG_VER}"
+echo -e "${TAB}  - Node.js 22"
+echo -e "${TAB}  - PostgreSQL 17"
 echo -e "${TAB}  - Jellystat"
 echo ""
 
