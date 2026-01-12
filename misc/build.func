@@ -587,7 +587,10 @@ base_settings() {
   # Validate and set Container ID
   local requested_id="${var_ctid:-$NEXTID}"
   if ! validate_container_id "$requested_id"; then
-    msg_warn "Container ID $requested_id is already in use. Using next available ID: $(get_valid_container_id "$requested_id")"
+    # Only show warning if user manually specified an ID (not auto-assigned)
+    if [[ -n "${var_ctid:-}" ]]; then
+      msg_warn "Container ID $requested_id is already in use. Using next available ID: $(get_valid_container_id "$requested_id")"
+    fi
     requested_id=$(get_valid_container_id "$requested_id")
   fi
   CT_ID="$requested_id"
