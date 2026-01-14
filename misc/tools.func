@@ -3002,6 +3002,10 @@ _setup_nvidia_gpu() {
 
   msg_info "Installing NVIDIA GPU drivers"
 
+  # Prevent interactive dialogs (e.g., "Mismatching nvidia kernel module" whiptail)
+  export DEBIAN_FRONTEND=noninteractive
+  export NEEDRESTART_MODE=a
+
   # Detect host driver version (passed through via /proc)
   # Format varies by driver type:
   #   Proprietary: "NVRM version: NVIDIA UNIX x86_64 Kernel Module  550.54.14  Thu..."
@@ -3015,7 +3019,7 @@ _setup_nvidia_gpu() {
   if [[ -z "$nvidia_host_version" ]]; then
     msg_warn "NVIDIA host driver version not found in /proc/driver/nvidia/version"
     msg_warn "Ensure NVIDIA drivers are installed on host and GPU passthrough is enabled"
-    $STD apt -y install va-driver-all vainfo 2>/dev/null || true
+    $STD apt-get -y install va-driver-all vainfo 2>/dev/null || true
     return 0
   fi
 
@@ -3028,7 +3032,7 @@ _setup_nvidia_gpu() {
         sed -i -E 's/Components: (.*)$/Components: \1 contrib non-free non-free-firmware/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
       fi
     fi
-    $STD apt -y update 2>/dev/null || msg_warn "apt update failed - continuing anyway"
+    $STD apt-get -y update 2>/dev/null || msg_warn "apt update failed - continuing anyway"
 
     # For Debian 13 Trixie/Sid: Use Debian's own nvidia packages first (better compatibility)
     # NVIDIA's CUDA repo targets Debian 12 and may not have amd64 packages for Trixie
@@ -3037,17 +3041,17 @@ _setup_nvidia_gpu() {
 
       # Try version-matched from Debian repos first
       local nvidia_pkgs="libcuda1=${nvidia_host_version}* libnvcuvid1=${nvidia_host_version}* libnvidia-encode1=${nvidia_host_version}* libnvidia-ml1=${nvidia_host_version}*"
-      if $STD apt -y install --no-install-recommends $nvidia_pkgs 2>/dev/null; then
+      if $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends $nvidia_pkgs 2>/dev/null; then
         msg_ok "Installed version-matched NVIDIA libraries from Debian"
       else
         # Fallback to unversioned (whatever Debian provides)
-        if $STD apt -y install --no-install-recommends libcuda1 libnvcuvid1 libnvidia-encode1 libnvidia-ml1 2>/dev/null; then
+        if $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends libcuda1 libnvcuvid1 libnvidia-encode1 libnvidia-ml1 2>/dev/null; then
           msg_ok "Installed NVIDIA libraries from Debian (version may differ from host)"
         else
           msg_warn "NVIDIA library installation failed - GPU compute may not work"
         fi
       fi
-      $STD apt -y install --no-install-recommends nvidia-smi 2>/dev/null || true
+      $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends nvidia-smi 2>/dev/null || true
 
     else
       # Debian 11/12: Use NVIDIA CUDA repository for version matching
@@ -3077,24 +3081,24 @@ Pin: origin developer.download.nvidia.com
 Pin-Priority: 1001
 NVIDIA_PIN
 
-      $STD apt -y update 2>/dev/null || msg_warn "apt update failed - continuing anyway"
+      $STD apt-get -y update 2>/dev/null || msg_warn "apt update failed - continuing anyway"
 
       # Install version-matched NVIDIA libraries
       local nvidia_pkgs="libcuda1=${nvidia_host_version}* libnvcuvid1=${nvidia_host_version}* libnvidia-encode1=${nvidia_host_version}* libnvidia-ml1=${nvidia_host_version}*"
 
       msg_info "Installing NVIDIA libraries (version ${nvidia_host_version})"
-      if $STD apt -y install --no-install-recommends $nvidia_pkgs 2>/dev/null; then
+      if $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends $nvidia_pkgs 2>/dev/null; then
         msg_ok "Installed version-matched NVIDIA libraries"
       else
         msg_warn "Version-pinned install failed - trying unpinned"
-        if $STD apt -y install --no-install-recommends libcuda1 libnvcuvid1 libnvidia-encode1 libnvidia-ml1 2>/dev/null; then
+        if $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends libcuda1 libnvcuvid1 libnvidia-encode1 libnvidia-ml1 2>/dev/null; then
           msg_ok "Installed NVIDIA libraries (unpinned) - version mismatch may occur"
         else
           msg_warn "NVIDIA library installation failed"
         fi
       fi
 
-      $STD apt -y install --no-install-recommends nvidia-smi 2>/dev/null || true
+      $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends nvidia-smi 2>/dev/null || true
     fi
 
   elif [[ "$os_id" == "ubuntu" ]]; then
@@ -3119,20 +3123,20 @@ NVIDIA_PIN
       rm -f "$cuda_keyring"
     fi
 
-    $STD apt -y update 2>/dev/null || msg_warn "apt update failed - continuing anyway"
+    $STD apt-get -y update 2>/dev/null || msg_warn "apt update failed - continuing anyway"
 
     # Try version-matched install
     local nvidia_pkgs="libcuda1=${nvidia_host_version}* libnvcuvid1=${nvidia_host_version}* libnvidia-encode1=${nvidia_host_version}* libnvidia-ml1=${nvidia_host_version}*"
-    if $STD apt -y install --no-install-recommends $nvidia_pkgs 2>/dev/null; then
+    if $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends $nvidia_pkgs 2>/dev/null; then
       msg_ok "Installed version-matched NVIDIA libraries"
     else
       # Fallback to Ubuntu repo packages
-      $STD apt -y install --no-install-recommends libnvidia-decode libnvidia-encode nvidia-utils 2>/dev/null || msg_warn "NVIDIA installation failed"
+      $STD apt-get -y -o Dpkg::Options::="--force-confold" install --no-install-recommends libnvidia-decode libnvidia-encode nvidia-utils 2>/dev/null || msg_warn "NVIDIA installation failed"
     fi
   fi
 
   # VA-API for hybrid setups (Intel + NVIDIA)
-  $STD apt -y install va-driver-all vainfo 2>/dev/null || true
+  $STD apt-get -y install va-driver-all vainfo 2>/dev/null || true
 
   msg_ok "NVIDIA GPU configured"
 }
