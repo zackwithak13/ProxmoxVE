@@ -2,11 +2,11 @@
     "name": "Unifi OS Server",
     "slug": "unifi-os-server",
     "categories": [
-        2
+        4
     ],
     "date_created": "2026-01-16",
-    "type": "vm",
-    "updateable": false,
+    "type": "ct",
+    "updateable": true,
     "privileged": true,
     "interface_port": 11443,
     "documentation": "https://help.ui.com/hc/en-us",
