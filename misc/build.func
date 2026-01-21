@@ -4478,6 +4478,10 @@ create_lxc_container() {
 
   msg_info "Searching for template '$TEMPLATE_SEARCH'"
 
+  # Initialize variables
+  ONLINE_TEMPLATE=""
+  ONLINE_TEMPLATES=()
+
   # Step 1: Check local templates first (instant)
   mapfile -t LOCAL_TEMPLATES < <(
     pveam list "$TEMPLATE_STORAGE" 2>/dev/null |
