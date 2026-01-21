@@ -4503,12 +4503,12 @@ create_lxc_container() {
       pveam update >/dev/null 2>&1 || msg_warn "Could not update template catalog (pveam update failed)"
     fi
 
+    ONLINE_TEMPLATES=()
+    ONLINE_TEMPLATE=""
     set +u
     mapfile -t ONLINE_TEMPLATES < <(pveam available -section system 2>/dev/null | grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' | awk '{print $2}' | grep -E "^${TEMPLATE_SEARCH}.*${TEMPLATE_PATTERN}" | sort -t - -k 2 -V 2>/dev/null || true)
-    set -u
-
-    ONLINE_TEMPLATE=""
     [[ ${#ONLINE_TEMPLATES[@]} -gt 0 ]] && ONLINE_TEMPLATE="${ONLINE_TEMPLATES[-1]}"
+    set -u
 
     TEMPLATE="$ONLINE_TEMPLATE"
     TEMPLATE_SOURCE="online"
@@ -4521,6 +4521,8 @@ create_lxc_container() {
     echo "[DEBUG] No template found for ${PCT_OSTYPE} ${PCT_OSVERSION}, searching for alternatives..."
 
     # Get all available versions for this OS type
+    AVAILABLE_VERSIONS=()
+    set +u
     mapfile -t AVAILABLE_VERSIONS < <(
       pveam available -section system 2>/dev/null |
         grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' |
@@ -4529,6 +4531,7 @@ create_lxc_container() {
         sed -E "s/.*${PCT_OSTYPE}-([0-9]+(\.[0-9]+)?).*/\1/" |
         sort -u -V 2>/dev/null
     )
+    set -u
 
     if [[ ${#AVAILABLE_VERSIONS[@]} -gt 0 ]]; then
       echo ""
@@ -4543,6 +4546,8 @@ create_lxc_container() {
         PCT_OSVERSION="${AVAILABLE_VERSIONS[$((choice - 1))]}"
         TEMPLATE_SEARCH="${PCT_OSTYPE}-${PCT_OSVERSION}"
 
+        ONLINE_TEMPLATES=()
+        set +u
         mapfile -t ONLINE_TEMPLATES < <(
           pveam available -section system 2>/dev/null |
             grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' |
@@ -4550,6 +4555,7 @@ create_lxc_container() {
             grep -E "^${TEMPLATE_SEARCH}-.*${TEMPLATE_PATTERN}" |
             sort -t - -k 2 -V 2>/dev/null || true
         )
+        set -u
 
         if [[ ${#ONLINE_TEMPLATES[@]} -gt 0 ]]; then
           TEMPLATE="${ONLINE_TEMPLATES[-1]}"
