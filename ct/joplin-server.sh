@@ -47,6 +47,7 @@ function update_script() {
     $STD yarn workspaces focus @joplin/server
     cd packages/server
     $STD yarn run build
+    $STD yarn run tsc
     msg_ok "Updated Joplin-Server"
 
     msg_info "Starting Services"

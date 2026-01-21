@@ -39,6 +39,7 @@ export BUILD_SEQUENCIAL=1
 $STD yarn workspaces focus @joplin/server
 cd packages/server
 $STD yarn run build
+$STD yarn run tsc
 
 cat <<EOF >/opt/joplin-server/.env
 PM2_HOME=/opt/pm2

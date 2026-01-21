@@ -4508,7 +4508,6 @@ create_lxc_container() {
     fi
 
     ONLINE_TEMPLATES=()
-    ONLINE_TEMPLATE=""
     mapfile -t ONLINE_TEMPLATES < <(pveam available -section system 2>/dev/null | grep -E '\.(tar\.zst|tar\.xz|tar\.gz)$' | awk '{print $2}' | grep -E "^${TEMPLATE_SEARCH}.*${TEMPLATE_PATTERN}" | sort -t - -k 2 -V 2>/dev/null || true)
     [[ ${#ONLINE_TEMPLATES[@]} -gt 0 ]] && ONLINE_TEMPLATE="${ONLINE_TEMPLATES[-1]}"
 
