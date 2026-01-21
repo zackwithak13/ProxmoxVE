@@ -45,9 +45,8 @@ function update_script() {
     $STD yarn config set --home enableTelemetry 0
     export BUILD_SEQUENCIAL=1
     $STD yarn workspaces focus @joplin/server
-    cd packages/server
-    $STD yarn run build
-    $STD yarn run tsc
+    $STD yarn workspaces foreach -R --topological-dev --from @joplin/server run build
+    $STD yarn workspaces foreach -R --topological-dev --from @joplin/server run tsc
     msg_ok "Updated Joplin-Server"
 
     msg_info "Starting Services"
