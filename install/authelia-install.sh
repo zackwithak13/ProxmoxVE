@@ -52,6 +52,14 @@ touch /etc/authelia/emails.txt
 JWT_SECRET=$(openssl rand -hex 64)
 SESSION_SECRET=$(openssl rand -hex 64)
 STORAGE_KEY=$(openssl rand -hex 64)
+
+if [[ "$DOMAIN" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}$ ]]; then
+  AUTHELIA_URL="https://${DOMAIN}:9091"
+else
+  AUTHELIA_URL="https://auth.${DOMAIN}"
+fi
+echo "$AUTHELIA_URL" > /etc/authelia/.authelia_url
+
 cat <<EOF >/etc/authelia/users.yml
 users:
   authelia:
@@ -75,7 +83,7 @@ session:
   remember_me: '1M'
   cookies:
     - domain: "${DOMAIN}"
-      authelia_url: "https://auth.${DOMAIN}"
+      authelia_url: "${AUTHELIA_URL}"
 storage:
   encryption_key: "${STORAGE_KEY}"
   local:
