@@ -19,7 +19,8 @@ $STD apt install -y \
   ca-certificates \
   chromium \
   graphicsmagick \
-  ghostscript
+  ghostscript \
+  ffmpeg
 msg_ok "Installed Dependencies"
 
 fetch_and_deploy_gh_release "monolith" "Y2Z/monolith" "singlefile" "latest" "/usr/bin" "monolith-gnu-linux-x86_64"
