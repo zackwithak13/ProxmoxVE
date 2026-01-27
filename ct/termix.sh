@@ -82,17 +82,21 @@ function update_script() {
     msg_ok "Updated Frontend Files"
 
     msg_warn "The Nginx configuration may need to be updated for new features to work."
-    msg_custom "💾" "Your current config will be backed up to termix.conf.bak"
+    msg_custom "💾" "Your current config will be backed up to nginx.conf.bak"
     msg_custom "⚠️ " "Note: Custom modifications (reverse proxy, SSL) will be overwritten!"
     echo ""
     read -rp "${TAB3}Update Nginx configuration? [Y/n]: " REPLY
     if [[ "${REPLY,,}" =~ ^(y|yes|)$ ]]; then
       msg_info "Updating Nginx Configuration"
-      cp /etc/nginx/sites-available/termix.conf /etc/nginx/sites-available/termix.conf.bak
-      curl -fsSL "https://raw.githubusercontent.com/Termix-SSH/Termix/main/docker/nginx.conf" -o /etc/nginx/sites-available/termix.conf
-      sed -i 's|/app/html|/opt/termix/html|g' /etc/nginx/sites-available/termix.conf
-      sed -i 's|/app/nginx|/opt/termix/nginx|g' /etc/nginx/sites-available/termix.conf
-      systemctl reload nginx
+      cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.bak
+      curl -fsSL "https://raw.githubusercontent.com/Termix-SSH/Termix/main/docker/nginx.conf" -o /etc/nginx/nginx.conf
+      sed -i '/^master_process/d' /etc/nginx/nginx.conf
+      sed -i '/^pid \/app\/nginx/d' /etc/nginx/nginx.conf
+      sed -i 's|/app/html|/opt/termix/html|g' /etc/nginx/nginx.conf
+      sed -i 's|/app/nginx|/opt/termix/nginx|g' /etc/nginx/nginx.conf
+      sed -i 's|listen ${PORT};|listen 80;|g' /etc/nginx/nginx.conf
+      
+      nginx -t && systemctl reload nginx
       msg_ok "Updated Nginx Configuration"
     else
       msg_warn "Nginx configuration not updated. If Termix doesn't work, restore from backup or update manually."

@@ -61,12 +61,15 @@ cp -r /opt/termix/public/fonts /opt/termix/html/fonts 2>/dev/null || true
 msg_ok "Set up Directories"
 
 msg_info "Configuring Nginx"
-curl -fsSL "https://raw.githubusercontent.com/Termix-SSH/Termix/main/docker/nginx.conf" -o /etc/nginx/sites-available/termix.conf
-sed -i 's|/app/html|/opt/termix/html|g' /etc/nginx/sites-available/termix.conf
-sed -i 's|/app/nginx|/opt/termix/nginx|g' /etc/nginx/sites-available/termix.conf
+curl -fsSL "https://raw.githubusercontent.com/Termix-SSH/Termix/main/docker/nginx.conf" -o /etc/nginx/nginx.conf
+sed -i '/^master_process/d' /etc/nginx/nginx.conf
+sed -i '/^pid \/app\/nginx/d' /etc/nginx/nginx.conf
+sed -i 's|/app/html|/opt/termix/html|g' /etc/nginx/nginx.conf
+sed -i 's|/app/nginx|/opt/termix/nginx|g' /etc/nginx/nginx.conf
+sed -i 's|listen ${PORT};|listen 80;|g' /etc/nginx/nginx.conf
+
 rm -f /etc/nginx/sites-enabled/default
-rm -f /etc/nginx/nginx.conf
-ln -sf /etc/nginx/sites-available/termix.conf /etc/nginx/nginx.conf
+nginx -t
 systemctl reload nginx
 msg_ok "Configured Nginx"
 
