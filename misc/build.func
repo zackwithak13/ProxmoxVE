@@ -3878,6 +3878,17 @@ EOF
 
   fix_gpu_gids
 
+  # Fix Debian 13 LXC template bug where / is owned by nobody:nogroup
+  # This must be done from the host as unprivileged containers cannot chown /
+  local rootfs
+  rootfs=$(pct config "$CTID" | grep -E '^rootfs:' | sed 's/rootfs: //' | cut -d',' -f1)
+  if [[ -n "$rootfs" ]]; then
+    local mount_point="/var/lib/lxc/${CTID}/rootfs"
+    if [[ -d "$mount_point" ]] && [[ "$(stat -c '%U' "$mount_point")" != "root" ]]; then
+      chown root:root "$mount_point" 2>/dev/null || true
+    fi
+  fi
+
   # Continue with standard container setup
   msg_info "Customizing LXC Container"
 
