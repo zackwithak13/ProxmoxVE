@@ -4560,6 +4560,14 @@ EOF
 
   if [[ "$PHP_FPM" == "YES" ]]; then
     MODULE_LIST+=" php${PHP_VERSION}-fpm"
+    # Create systemd override for PHP-FPM to fix runtime directory issues in LXC containers
+    mkdir -p /etc/systemd/system/php${PHP_VERSION}-fpm.service.d/
+    cat <<EOF >/etc/systemd/system/php${PHP_VERSION}-fpm.service.d/override.conf
+[Service]
+RuntimeDirectory=php
+RuntimeDirectoryMode=0755
+EOF
+    $STD systemctl daemon-reload
   fi
 
   # install apache2 with PHP support if requested
