@@ -1,13 +1,13 @@
 "use client";
 
-import { X } from "lucide-react";
+import { X, HelpCircle } from "lucide-react";
 import { Suspense } from "react";
 import Image from "next/image";
 
 import type { AppVersion, Script } from "@/lib/types";
 
-import { cleanSlug } from "@/lib/utils/resource-utils";
 import { Separator } from "@/components/ui/separator";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useVersions } from "@/hooks/use-versions";
 import { basePath } from "@/config/site-config";
 import { extractDate } from "@/lib/time";
@@ -108,18 +108,29 @@ function VersionInfo({ item }: { item: Script }) {
   const { data: versions = [], isLoading } = useVersions();
 
   if (isLoading || versions.length === 0) {
-    return <p className="text-sm text-muted-foreground">Loading versions...</p>;
+    return null;
   }
 
-  const matchedVersion = versions.find((v: AppVersion) => {
-    const cleanName = v.name.replace(/[^a-z0-9]/gi, "").toLowerCase();
-    return cleanName === cleanSlug(item.slug) || cleanName.includes(cleanSlug(item.slug));
-  });
+  const matchedVersion = versions.find((v: AppVersion) => v.slug === item.slug);
 
   if (!matchedVersion)
     return null;
 
-  return <span className="font-medium text-sm">{matchedVersion.version}</span>;
+  return (
+    <span className="font-medium text-sm flex items-center gap-1">
+      {matchedVersion.version}
+      {matchedVersion.pinned && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <HelpCircle className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+          </TooltipTrigger>
+          <TooltipContent className="max-w-xs">
+            <p>This version is pinned. We test each update for breaking changes before releasing new versions.</p>
+          </TooltipContent>
+        </Tooltip>
+      )}
+    </span>
+  );
 }
 
 export function ScriptItem({ item, setSelectedScript }: ScriptItemProps) {
