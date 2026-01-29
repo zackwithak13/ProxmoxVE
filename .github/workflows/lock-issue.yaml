@@ -17,7 +17,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           issue-inactive-days: 1
           issue-lock-reason: "resolved"
-          issue-created-after: "2026-01-27"
+          exclude-issue-created-before: "2026-01-27"
           issue-comment: |
             This issue has been automatically locked since it has been closed for more than 1 day.
             If you have a related issue, please open a new one and reference this issue if needed.
