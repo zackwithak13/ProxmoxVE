@@ -19,7 +19,7 @@ jobs:
       # Lock old issues (before 2026-01-27) without comment
       - uses: dessant/lock-threads@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           issue-inactive-days: 1
           issue-lock-reason: "resolved"
           exclude-issue-created-after: "2026-01-27T00:00:00Z"
@@ -32,7 +32,7 @@ jobs:
       # Lock new issues (from 2026-01-27) with comment
       - uses: dessant/lock-threads@v6
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ github.token }}
           issue-inactive-days: 1
           issue-lock-reason: "resolved"
           exclude-issue-created-before: "2026-01-27T00:00:00Z"
