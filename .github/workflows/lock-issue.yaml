@@ -2,22 +2,49 @@ name: Lock closed issues
 
 on:
   schedule:
-    - cron: "0 */6 * * *"  # Run every 6 hours
+    - cron: "0 0 * * *"  # Run daily at midnight
   workflow_dispatch:
 
 permissions:
   issues: write
+  pull-requests: write
+
+concurrency:
+  group: lock-threads
 
 jobs:
   lock:
     runs-on: ubuntu-latest
     steps:
+      # Lock old issues (before 2026-01-27) without comment
       - uses: dessant/lock-threads@v6
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           issue-inactive-days: 1
           issue-lock-reason: "resolved"
-          exclude-issue-created-before: "2026-01-27"
-          issue-comment: |
-            This issue has been automatically locked since it has been closed for more than 1 day.
-            If you have a related issue, please open a new one and reference this issue if needed.
+          exclude-issue-created-after: "2026-01-27T00:00:00Z"
+          issue-comment: ""
+          pr-inactive-days: 1
+          pr-lock-reason: "resolved"
+          exclude-pr-created-after: "2026-01-27T00:00:00Z"
+          pr-comment: ""
+
+      # Lock new issues (from 2026-01-27) with comment
+      - uses: dessant/lock-threads@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-inactive-days: 1
+          issue-lock-reason: "resolved"
+          exclude-issue-created-before: "2026-01-27T00:00:00Z"
+          issue-comment: >
+            This issue has been automatically locked since there
+            has not been any recent activity after it was closed.
+            Please open a new issue for related bugs and reference
+            this issue if needed.
+          pr-inactive-days: 1
+          pr-lock-reason: "resolved"
+          exclude-pr-created-before: "2026-01-27T00:00:00Z"
+          pr-comment: >
+            This pull request has been automatically locked since there
+            has not been any recent activity after it was closed.
+            Please open a new issue for related bugs.
