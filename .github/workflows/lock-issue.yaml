@@ -1,15 +1,22 @@
 name: Lock closed issues
 
 on:
-  issues:
-    types: [closed]
+  schedule:
+    - cron: "0 */6 * * *"  # Run every 6 hours
+  workflow_dispatch:
+
+permissions:
+  issues: write
 
 jobs:
   lock:
-    permissions:
-      issues: write
     runs-on: ubuntu-latest
     steps:
-      - uses: peter-evans/lock-issues@v3
+      - uses: dessant/lock-threads@v6
         with:
-          issue-number: ${{ github.event.issue.number }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          issue-inactive-days: 1
+          issue-lock-reason: "resolved"
+          issue-comment: |
+            This issue has been automatically locked since it has been closed for more than 1 day.
+            If you have a related issue, please open a new one and reference this issue if needed.
