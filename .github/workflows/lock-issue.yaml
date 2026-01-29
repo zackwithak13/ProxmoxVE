@@ -22,15 +22,29 @@ jobs:
             const lockDate = new Date();
             lockDate.setDate(lockDate.getDate() - daysBeforeLock);
             
+            // Exclude patterns (case-insensitive)
+            const excludePatterns = [
+              /automated pr/i,
+              /\[bot\]/i,
+              /dependabot/i
+            ];
+            
             // Search for closed, unlocked issues older than 3 days
             const issues = await github.rest.search.issuesAndPullRequests({
               q: `repo:${context.repo.owner}/${context.repo.repo} is:closed is:unlocked updated:<${lockDate.toISOString().split('T')[0]}`,
               per_page: 50
             });
             
-            console.log(`Found ${issues.data.items.length} issues/PRs to lock`);
+            console.log(`Found ${issues.data.items.length} issues/PRs to process`);
             
             for (const item of issues.data.items) {
+              // Skip excluded items
+              const shouldExclude = excludePatterns.some(pattern => pattern.test(item.title));
+              if (shouldExclude) {
+                console.log(`Skipped #${item.number}: "${item.title}" (matches exclude pattern)`);
+                continue;
+              }
+              
               const createdAt = new Date(item.created_at);
               const isNew = createdAt >= cutoffDate;
               
