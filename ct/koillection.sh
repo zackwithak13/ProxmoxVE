@@ -52,6 +52,7 @@ function update_script() {
     cd assets/ 
     $STD yarn install
     $STD yarn build
+    mkdir -p /opt/koillection/public/uploads
     chown -R www-data:www-data /opt/koillection/public/uploads
     rm -r /opt/koillection-backup
     msg_ok "Updated Koillection"

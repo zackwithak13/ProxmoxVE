@@ -40,6 +40,7 @@ $STD php bin/console app:translations:dump
 cd assets/
 $STD yarn install
 $STD yarn build
+mkdir -p /opt/koillection/public/uploads
 chown -R www-data:www-data /opt/koillection/public/uploads
 msg_ok "Configured Koillection"
 
