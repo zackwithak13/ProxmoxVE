@@ -5218,40 +5218,69 @@ function setup_meilisearch() {
           -H "Authorization: Bearer ${MEILI_MASTER_KEY}" \
           -H "Content-Type: application/json" 2>/dev/null) || true
 
-        DUMP_UID=$(echo "$DUMP_RESPONSE" | grep -oP '"dumpUid":\s*"\K[^"]+' || true)
+        # The initial response only contains taskUid, not dumpUid
+        # dumpUid is only available after the task completes
+        local TASK_UID
+        TASK_UID=$(echo "$DUMP_RESPONSE" | grep -oP '"taskUid":\s*\K[0-9]+' || true)
 
-        if [[ -n "$DUMP_UID" ]]; then
-          # Wait for dump to complete (check task status)
-          local TASK_UID
-          TASK_UID=$(echo "$DUMP_RESPONSE" | grep -oP '"taskUid":\s*\K[0-9]+' || true)
-
-          if [[ -n "$TASK_UID" ]]; then
-            msg_info "Waiting for dump task ${TASK_UID} to complete..."
-            local MAX_WAIT=120
-            local WAITED=0
-            while [[ $WAITED -lt $MAX_WAIT ]]; do
-              local TASK_STATUS
-              TASK_STATUS=$(curl -s "http://${MEILI_HOST}:${MEILI_PORT}/tasks/${TASK_UID}" \
-                -H "Authorization: Bearer ${MEILI_MASTER_KEY}" 2>/dev/null | grep -oP '"status":\s*"\K[^"]+' || true)
-              if [[ "$TASK_STATUS" == "succeeded" ]]; then
+        if [[ -n "$TASK_UID" ]]; then
+          msg_info "Waiting for dump task ${TASK_UID} to complete..."
+          local MAX_WAIT=120
+          local WAITED=0
+          local TASK_RESULT=""
+          
+          while [[ $WAITED -lt $MAX_WAIT ]]; do
+            TASK_RESULT=$(curl -s "http://${MEILI_HOST}:${MEILI_PORT}/tasks/${TASK_UID}" \
+              -H "Authorization: Bearer ${MEILI_MASTER_KEY}" 2>/dev/null) || true
+            
+            local TASK_STATUS
+            TASK_STATUS=$(echo "$TASK_RESULT" | grep -oP '"status":\s*"\K[^"]+' || true)
+            
+            if [[ "$TASK_STATUS" == "succeeded" ]]; then
+              # Extract dumpUid from the completed task details
+              DUMP_UID=$(echo "$TASK_RESULT" | grep -oP '"dumpUid":\s*"\K[^"]+' || true)
+              if [[ -n "$DUMP_UID" ]]; then
                 msg_ok "MeiliSearch dump created successfully: ${DUMP_UID}"
-                break
-              elif [[ "$TASK_STATUS" == "failed" ]]; then
-                msg_warn "MeiliSearch dump failed, proceeding without migration"
-                DUMP_UID=""
-                break
+              else
+                msg_warn "Dump task succeeded but could not extract dumpUid"
               fi
-              sleep 2
-              WAITED=$((WAITED + 2))
-            done
-
-            if [[ $WAITED -ge $MAX_WAIT ]]; then
-              msg_warn "MeiliSearch dump timed out, proceeding without migration"
-              DUMP_UID=""
+              break
+            elif [[ "$TASK_STATUS" == "failed" ]]; then
+              local ERROR_MSG
+              ERROR_MSG=$(echo "$TASK_RESULT" | grep -oP '"message":\s*"\K[^"]+' || echo "Unknown error")
+              msg_warn "MeiliSearch dump failed: ${ERROR_MSG}"
+              break
             fi
+            sleep 2
+            WAITED=$((WAITED + 2))
+          done
+
+          if [[ $WAITED -ge $MAX_WAIT ]]; then
+            msg_warn "MeiliSearch dump timed out after ${MAX_WAIT}s"
           fi
         else
-          msg_warn "Could not create MeiliSearch dump, proceeding with direct upgrade"
+          msg_warn "Could not trigger MeiliSearch dump (no taskUid in response)"
+          msg_info "Response was: ${DUMP_RESPONSE:-empty}"
+        fi
+      fi
+
+      # If migration is needed but dump failed, we have options:
+      # 1. Abort the update (safest, but annoying)
+      # 2. Backup data directory and proceed (allows manual recovery)
+      # 3. Just proceed and hope for the best (dangerous)
+      # We choose option 2: backup and proceed with warning
+      if [[ "$NEEDS_MIGRATION" == "true" ]] && [[ -z "$DUMP_UID" ]]; then
+        local MEILI_DB_PATH
+        MEILI_DB_PATH=$(grep -E "^db_path\s*=" /etc/meilisearch.toml 2>/dev/null | sed 's/.*=\s*"\(.*\)"/\1/' | tr -d ' ')
+        MEILI_DB_PATH="${MEILI_DB_PATH:-/var/lib/meilisearch/data}"
+        
+        if [[ -d "$MEILI_DB_PATH" ]] && [[ -n "$(ls -A "$MEILI_DB_PATH" 2>/dev/null)" ]]; then
+          local BACKUP_PATH="${MEILI_DB_PATH}.backup.$(date +%Y%m%d%H%M%S)"
+          msg_warn "Backing up MeiliSearch data to ${BACKUP_PATH}"
+          mv "$MEILI_DB_PATH" "$BACKUP_PATH"
+          mkdir -p "$MEILI_DB_PATH"
+          msg_info "Data backed up. After update, you may need to reindex your data."
+          msg_info "Old data is preserved at: ${BACKUP_PATH}"
         fi
       fi
 
@@ -5268,45 +5297,48 @@ function setup_meilisearch() {
         msg_info "Removing old MeiliSearch database for migration"
         rm -rf "${MEILI_DB_PATH:?}"/*
 
-        # Start with dump import
-        msg_info "Starting MeiliSearch with dump import"
-        systemctl start meilisearch
-
-        # Import dump via API
-        local IMPORT_RESPONSE
-        IMPORT_RESPONSE=$(curl -s -X POST "http://${MEILI_HOST}:${MEILI_PORT}/dumps/${DUMP_UID}/import" \
-          -H "Authorization: Bearer ${MEILI_MASTER_KEY}" 2>/dev/null) || true
-
-        # Wait for import to complete
-        local IMPORT_TASK_UID
-        IMPORT_TASK_UID=$(echo "$IMPORT_RESPONSE" | grep -oP '"taskUid":\s*\K[0-9]+' || true)
-
-        if [[ -n "$IMPORT_TASK_UID" ]]; then
-          msg_info "Waiting for dump import task ${IMPORT_TASK_UID} to complete..."
+        # Import dump using CLI flag (this is the supported method)
+        local DUMP_FILE="${MEILI_DUMP_DIR}/${DUMP_UID}.dump"
+        if [[ -f "$DUMP_FILE" ]]; then
+          msg_info "Importing dump: ${DUMP_FILE}"
+          
+          # Start meilisearch with --import-dump flag
+          # This is a one-time import that happens during startup
+          /usr/bin/meilisearch --config-file-path /etc/meilisearch.toml --import-dump "$DUMP_FILE" &
+          local MEILI_PID=$!
+          
+          # Wait for meilisearch to become healthy (import happens during startup)
+          msg_info "Waiting for MeiliSearch to import and start..."
           local MAX_WAIT=300
           local WAITED=0
           while [[ $WAITED -lt $MAX_WAIT ]]; do
-            local TASK_STATUS
-            TASK_STATUS=$(curl -s "http://${MEILI_HOST}:${MEILI_PORT}/tasks/${IMPORT_TASK_UID}" \
-              -H "Authorization: Bearer ${MEILI_MASTER_KEY}" 2>/dev/null | grep -oP '"status":\s*"\K[^"]+' || true)
-            if [[ "$TASK_STATUS" == "succeeded" ]]; then
-              msg_ok "MeiliSearch dump imported successfully"
+            if curl -sf "http://${MEILI_HOST}:${MEILI_PORT}/health" &>/dev/null; then
+              msg_ok "MeiliSearch is healthy after import"
               break
-            elif [[ "$TASK_STATUS" == "failed" ]]; then
-              msg_warn "MeiliSearch dump import failed - manual intervention may be required"
+            fi
+            # Check if process is still running
+            if ! kill -0 $MEILI_PID 2>/dev/null; then
+              msg_warn "MeiliSearch process exited during import"
               break
             fi
             sleep 3
             WAITED=$((WAITED + 3))
           done
-        else
-          # Fallback: Start with --import-dump flag (for older API versions)
-          systemctl stop meilisearch
-          msg_info "Attempting dump import via command line"
-          /usr/bin/meilisearch --config-file-path /etc/meilisearch.toml --import-dump "${MEILI_DUMP_DIR}/${DUMP_UID}.dump" &>/dev/null &
-          local MEILI_PID=$!
-          sleep 10
+          
+          # Stop the manual process
           kill $MEILI_PID 2>/dev/null || true
+          sleep 2
+          
+          # Start via systemd for proper management
+          systemctl start meilisearch
+          
+          if systemctl is-active --quiet meilisearch; then
+            msg_ok "MeiliSearch migrated successfully"
+          else
+            msg_warn "MeiliSearch failed to start after migration - check logs with: journalctl -u meilisearch"
+          fi
+        else
+          msg_warn "Dump file not found: ${DUMP_FILE}"
           systemctl start meilisearch
         fi
       else
