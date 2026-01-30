@@ -250,7 +250,7 @@ EOF
     ln -s "$GEO_DIR" "$APP_DIR"
 
     chown -R immich:immich "$INSTALL_DIR"
-    if [[ "$MAINT_MODE" == 1 ]]; then
+    if [[ "${MAINT_MODE:-0}" == 1 ]]; then
       msg_info "Disabling Maintenance Mode"
       cd /opt/immich/app/bin
       $STD bash ./immich-admin disable-maintenance-mode
