@@ -32,8 +32,8 @@ sed -i -e "s|^APP_ENV=.*|APP_ENV=prod|" \
   -e "s|^DB_USER=.*|DB_USER=${PG_DB_USER}|" \
   -e "s|^DB_PASSWORD=.*|DB_PASSWORD=${PG_DB_PASS}|" \
   /opt/koillection/.env.local
+echo 'APP_RUNTIME="Symfony\Component\Runtime\SymfonyRuntime"' >> /opt/koillection/.env.local
 export COMPOSER_ALLOW_SUPERUSER=1
-export APP_RUNTIME='Symfony\Component\Runtime\SymfonyRuntime'
 $STD composer install --no-dev -o --no-interaction --classmap-authoritative
 $STD php bin/console doctrine:migrations:migrate --no-interaction
 $STD php bin/console app:translations:dump
@@ -49,6 +49,7 @@ cat <<EOF >/etc/apache2/sites-available/koillection.conf
 <VirtualHost *:80>
     ServerName koillection
     DocumentRoot /opt/koillection/public
+    SetEnv APP_RUNTIME "Symfony\\Component\\Runtime\\SymfonyRuntime"
     <Directory /opt/koillection/public>
         Options Indexes FollowSymLinks
         AllowOverride All

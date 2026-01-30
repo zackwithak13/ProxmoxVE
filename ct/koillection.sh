@@ -44,8 +44,13 @@ function update_script() {
     cd /opt/koillection 
     cp -r /opt/koillection-backup/.env.local /opt/koillection
     cp -r /opt/koillection-backup/public/uploads/. /opt/koillection/public/uploads/
+    
+    # Ensure APP_RUNTIME is in .env.local for CLI commands (upgrades from older versions)
+    if ! grep -q "APP_RUNTIME" /opt/koillection/.env.local 2>/dev/null; then
+      echo 'APP_RUNTIME="Symfony\Component\Runtime\SymfonyRuntime"' >> /opt/koillection/.env.local
+    fi
+    
     export COMPOSER_ALLOW_SUPERUSER=1
-    export APP_RUNTIME='Symfony\Component\Runtime\SymfonyRuntime'
     $STD composer install --no-dev -o --no-interaction --classmap-authoritative
     $STD php bin/console doctrine:migrations:migrate --no-interaction
     $STD php bin/console app:translations:dump
@@ -55,6 +60,11 @@ function update_script() {
     mkdir -p /opt/koillection/public/uploads
     chown -R www-data:www-data /opt/koillection/public/uploads
     rm -r /opt/koillection-backup
+    
+    # Ensure APP_RUNTIME is set in Apache config (for upgrades from older versions)
+    if ! grep -q "APP_RUNTIME" /etc/apache2/sites-available/koillection.conf 2>/dev/null; then
+      sed -i '/<VirtualHost/a\    SetEnv APP_RUNTIME "Symfony\\Component\\Runtime\\SymfonyRuntime"' /etc/apache2/sites-available/koillection.conf
+    fi
     msg_ok "Updated Koillection"
 
     msg_info "Starting Service"
