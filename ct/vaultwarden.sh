@@ -75,7 +75,10 @@ function update_script() {
       msg_info "Updating Web-Vault to $WVRELEASE"
       rm -rf /opt/vaultwarden/web-vault
 
-      fetch_and_deploy_gh_release "vaultwarden_webvault" "dani-garcia/bw_web_builds" "prebuild" "latest" "/opt/vaultwarden" "bw_web_*.tar.gz"
+      TEMP_DIR=$(mktemp -d)
+      fetch_and_deploy_gh_release "vaultwarden_webvault" "dani-garcia/bw_web_builds" "prebuild" "latest" "$TEMP_DIR" "bw_web_*.tar.gz"
+      mv "$TEMP_DIR/web-vault" /opt/vaultwarden/web-vault
+      rm -rf "$TEMP_DIR"
 
       chown -R root:root /opt/vaultwarden/web-vault/
       msg_ok "Updated Web-Vault to ${WVRELEASE}"
