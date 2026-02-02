@@ -67,8 +67,7 @@ EOF
     msg_info "Installing Mise"
     curl -fSs https://mise.jdx.dev/gpg-key.pub | tee /etc/apt/keyrings/mise-archive-keyring.pub 1>/dev/null
     echo "deb [signed-by=/etc/apt/keyrings/mise-archive-keyring.pub arch=amd64] https://mise.jdx.dev/deb stable main" >/etc/apt/sources.list.d/mise.list
-    $STD apt update
-    $STD apt install -y mise
+    ensure_dependencies mise
     msg_ok "Installed Mise"
   fi
 
@@ -134,9 +133,8 @@ EOF
       $STD sudo -u postgres psql -d immich -c "REINDEX INDEX face_index;"
       $STD sudo -u postgres psql -d immich -c "REINDEX INDEX clip_index;"
     fi
-    if ! dpkg -l | grep -q ccache; then
-      $STD apt install -yqq ccache
-    fi
+      ensure_dependencies ccache
+
 
     INSTALL_DIR="/opt/${APP}"
     UPLOAD_DIR="$(sed -n '/^IMMICH_MEDIA_LOCATION/s/[^=]*=//p' /opt/immich/.env)"
@@ -304,10 +302,7 @@ function compile_libjxl() {
 
 function compile_libheif() {
   SOURCE=${SOURCE_DIR}/libheif
-  if ! dpkg -l | grep -q libaom; then
-    $STD apt install -y libaom-dev
-    local update="required"
-  fi
+  ensure_dependencies libaom-dev
   : "${LIBHEIF_REVISION:=$(jq -cr '.revision' "$BASE_DIR"/server/sources/libheif.json)}"
   if [[ "${update:-}" ]] || [[ "$LIBHEIF_REVISION" != "$(grep 'libheif' ~/.immich_library_revisions | awk '{print $2}')" ]]; then
     msg_info "Recompiling libheif"
